@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require 'minitest/autorun'
-require_relative 'helper'
+require_relative '../helper'
 class ArrayTest < Minitest::Test
   def setup
     @helper = Helper.new

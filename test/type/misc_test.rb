@@ -3,7 +3,7 @@
 require 'minitest/autorun'
 require 'json'
 require 'yaml'
-require_relative 'helper'
+require_relative '../helper'
 class TypeTest < Minitest::Test
   def setup
     @helper = Helper.new

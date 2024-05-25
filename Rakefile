@@ -10,5 +10,5 @@ RuboCop::RakeTask.new do |task|
 end
 
 Minitest::TestTask.create(:test) do |t|
-  t.test_globs = ['test/*_test.rb']
+  t.test_globs = ['test/**/*_test.rb']
 end
