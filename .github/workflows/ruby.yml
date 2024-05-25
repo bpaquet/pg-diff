@@ -32,7 +32,7 @@ jobs:
       run: bundle exec rake rubocop
     - name: Create test db
       run: |
-        psql -c "CREATE DATABASE test1"
-        psql -c "CREATE DATABASE test2"
+        psql -h localhost -c "CREATE DATABASE test1"
+        psql -h localhost -c "CREATE DATABASE test2"
     - name: Test
       run: bundle exec rake test
