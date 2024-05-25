@@ -21,7 +21,7 @@ class Psql
     @logger ||=
       begin
         logger = Logger.new($stdout)
-        logger.level = Logger.const_get(@options[:log_level].upcase)
+        logger.level = @options[:log_level]
         logger
       end
   end

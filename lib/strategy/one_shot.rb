@@ -1,13 +1,10 @@
 # frozen_string_literal: true
 
+require_relative 'base'
+
 module Strategy
   # Diff table in one shot
-  class OneShot
-    def initialize(options, table)
-      @options = options
-      @table = table
-    end
-
+  class OneShot < Base
     def batches
       [{
         name: "full_#{@table}",
