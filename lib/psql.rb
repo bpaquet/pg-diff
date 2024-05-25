@@ -31,16 +31,20 @@ class Psql
     run_psql_command("\\copy ( #{sql_command} ) to #{file}", url)
   end
 
-  def run_psql_command(sql_command, url)
+  def run_psql_command(sql_command, url) # rubocop:disable Metrics/MethodLength,Metrics/AbcSize
     logger.debug("Running toward #{url}: #{sql_command}")
     f = Tempfile.new('sql')
     output = Tempfile.new('output')
     f.write(sql_command)
     f.close
-    cmd = "#{@options[:psql]} #{url} -v ON_ERROR_STOP=on -f #{f.path} > #{output.path} 2>&1"
-    failed = system(cmd)
+    ok = system("#{@options[:psql]} #{url} -v ON_ERROR_STOP=on -f #{f.path} > #{output.path} 2>&1")
     f.unlink
-    output.unlink
-    raise("Failed to run #{cmd}") unless failed
+    if ok
+      output.unlink
+    else
+      puts File.read(output.path)
+      output.unlink
+      raise('Failed to run psql command')
+    end
   end
 end

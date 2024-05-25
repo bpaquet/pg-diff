@@ -16,7 +16,8 @@ options = {
   strategy: 'one_shot',
   parallel: 4,
   batch_size: 1000,
-  key: 'id'
+  key: 'id',
+  table_mapping: '<TABLE>'
 }
 
 OptionParser.new do |opts| # rubocop:disable Metrics/BlockLength
@@ -39,6 +40,10 @@ OptionParser.new do |opts| # rubocop:disable Metrics/BlockLength
 
   opts.on('--tables tables', 'Comma separated list of table to compare') do |v|
     options[:tables] = v
+  end
+
+  opts.on('--table_mapping mapping', 'Target table name. Can contain <TABLE>, which is the orignal table name') do |v|
+    options[:table_mapping] = v
   end
 
   opts.on('--order_by order_by', 'Order by column') do |v|
@@ -90,19 +95,25 @@ logger.level = options[:log_level]
 psql = Psql.new(options)
 to_do = []
 options[:tables].split(',').each do |table|
+  target_table = options[:table_mapping].gsub('<TABLE>', table)
   logger.info("Preparing table #{table}")
   strategy_klass = "Strategy::#{options[:strategy].split('_').map(&:capitalize).join}"
-  batches = Object.const_get(strategy_klass).new(options, psql, table).batches
+  batches = Object.const_get(strategy_klass).new(options, psql, table, target_table).batches
   logger.info("Comparing table #{table} with #{batches.size} batches, strategy: #{options[:strategy]}")
-  to_do += batches.map { |batch| [table, batch] }
+  to_do += batches.map { |batch| [table, target_table, batch] }
 end
 
 logger.warn("Number of batches: #{to_do.size}")
-Parallel.each(to_do, in_threads: options[:parallel], progress: 'Diffing ...') do |table, batch|
+Parallel.each(to_do, in_threads: options[:parallel], progress: 'Diffing ...') do |table, target_table, batch|
   src_file = "#{options[:tmp_dir]}/pg_diff_src_#{table}_#{batch[:name]}"
-  target_file = "#{options[:tmp_dir]}/pg_diff_target_#{table}_#{batch[:name]}"
-  Parallel.each([[src_file, options[:src]], [target_file, options[:target]]], in_threads: 2) do |file, db|
-    psql.run_copy("select * from #{table} WHERE #{batch[:where]} ORDER BY #{options[:order_by]}", file, db)
+  target_file = "#{options[:tmp_dir]}/pg_diff_target_#{target_table}_#{batch[:name]}"
+  Parallel.each(
+    [
+      [src_file, table, options[:src]],
+      [target_file, target_table, options[:target]]
+    ], in_threads: 2
+  ) do |file, real_table, db|
+    psql.run_copy("select * from #{real_table} WHERE #{batch[:where]} ORDER BY #{options[:order_by]}", file, db)
   end
   result = system("diff -du #{src_file} #{target_file}")
   count = `wc -l #{src_file}`.to_i
