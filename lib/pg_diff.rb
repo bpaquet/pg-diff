@@ -7,6 +7,7 @@ require 'parallel'
 require_relative 'stats'
 require_relative 'strategy/one_shot'
 require_relative 'strategy/by_id'
+require_relative 'strategy/by_timestamp'
 
 options = {
   tmp_dir: '/tmp',
