@@ -13,7 +13,8 @@ jobs:
       postgres:
         image: postgres
         env:
-          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: runner
+          POSTGRES_HOST_AUTH_METHOD: 'trust'
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -30,16 +31,8 @@ jobs:
     - name: Rubocop
       run: bundle exec rake rubocop
     - name: Create test db
-      env:
-        PGHOST: 127.0.0.1
-        PGUSER: postgres
-        PGPASSWORD: postgres
       run: |
         psql -c "CREATE DATABASE test1"
         psql -c "CREATE DATABASE test2"
     - name: Test
-      env:
-        PG_HOST: 127.0.0.1
-        PG_USER: postgres
-        PG_PASSWORD: postgres
       run: bundle exec rake test
