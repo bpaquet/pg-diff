@@ -15,7 +15,7 @@ options = {
   parallel: 4
 }
 
-OptionParser.new do |opts|
+OptionParser.new do |opts| # rubocop:disable Metrics/BlockLength
   opts.banner = 'Usage: pg-diff [options]'
 
   opts.on('--tmp tmp_dir', 'Sepcify the tmp directory to use') do |v|
@@ -48,6 +48,10 @@ OptionParser.new do |opts|
   opts.on('--parallel parallel', 'Number of parallel threads') do |v|
     options[:parallel] = v
   end
+
+  opts.on('--record_sql_file file', 'File to log all sql request') do |v|
+    options[:record_sql_file] = v
+  end
 end.parse!
 
 %i[src target tables].each do |key|
@@ -78,9 +82,7 @@ Parallel.each(to_do, in_threads: options[:parallel]) do |table, batch|
   src_file = "#{options[:tmp_dir]}/pg_diff_src_#{table}_#{batch[:name]}"
   target_file = "#{options[:tmp_dir]}/pg_diff_target_#{table}_#{batch[:name]}"
   Parallel.each([[src_file, options[:src]], [target_file, options[:target]]], in_threads: 2) do |file, db|
-    psql.run_psql_command(
-      "\\copy ( select * from #{table} WHERE #{batch[:where]} ORDER BY #{options[:order_by]} ) to #{file}", db
-    )
+    psql.run_copy("select * from #{table} WHERE #{batch[:where]} ORDER BY #{options[:order_by]}", file, db)
   end
   system("diff -du #{src_file} #{target_file}") || raise("Tables #{table} are different!")
   logger.info("Tables #{table} are the same, file size: #{File.size(src_file)}")
