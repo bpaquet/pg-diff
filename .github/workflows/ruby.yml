@@ -29,6 +29,14 @@ jobs:
         bundler-cache: true
     - name: Rubocop
       run: bundle exec rake rubocop
+    - name: Create test db
+      env:
+        PG_HOST: 127.0.0.1
+        PG_USER: postgres
+        PG_PASSWORD: postgres
+      run: |
+        psql -h $PG_HOST -U $PG_USER -c "CREATE DATABASE test1"
+        psql -h $PG_HOST -U $PG_USER -c "CREATE DATABASE test2"
     - name: Test
       env:
         PG_HOST: 127.0.0.1
