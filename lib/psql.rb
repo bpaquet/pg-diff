@@ -32,7 +32,7 @@ class Psql
   end
 
   def run_psql_command(sql_command, url)
-    logger.info("Running toward #{url}: #{sql_command}")
+    logger.debug("Running toward #{url}: #{sql_command}")
     f = Tempfile.new('sql')
     output = Tempfile.new('output')
     f.write(sql_command)
