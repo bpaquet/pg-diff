@@ -2,6 +2,7 @@
 
 require 'optparse'
 require 'logger'
+require 'parallel'
 
 options = {
   tmp_dir: '/tmp',
@@ -50,10 +51,11 @@ psql = Psql.new(options)
 options[:tables].split(',').each do |table|
   src_file = "#{options[:tmp_dir]}/pg_diff_src_#{table}"
   target_file = "#{options[:tmp_dir]}/pg_diff_target_#{table}"
-  psql.run_psql_command("\\copy ( select * from #{table} ORDER BY #{options[:order_by]} ) to #{src_file}",
-                        options[:src])
-  psql.run_psql_command("\\copy ( select * from #{table} ORDER BY #{options[:order_by]} ) to #{target_file}",
-                        options[:target])
+  Parallel.each([[src_file, options[:src]], [target_file, options[:target]]], in_threads: 2) do |file, db|
+    psql.run_psql_command("\\copy ( select * from #{table} ORDER BY #{options[:order_by]} ) to #{file}", db)
+  end
   system("diff -du #{src_file} #{target_file}") || raise("Tables #{table} are different!")
-  logger.info("Tables #{table} are the same")
+  logger.info("Tables #{table} are the same, file size: #{File.size(src_file)}")
+  File.unlink(src_file)
+  File.unlink(target_file)
 end

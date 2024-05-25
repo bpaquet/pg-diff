@@ -3,7 +3,7 @@
 require 'rubocop/rake_task'
 require 'minitest/test_task'
 
-task default: :test
+task default: %i[test rubocop]
 
 RuboCop::RakeTask.new do |task|
   task.requires << 'rubocop-rake'
