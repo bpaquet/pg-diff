@@ -5,6 +5,14 @@ require 'logger'
 
 # Help to run psql commands
 class Psql
+  def self.record_sql_file(sql, file)
+    @mutex ||= Mutex.new
+    @mutex.synchronize do
+      current = File.exist?(file) ? File.read(file) : ''
+      File.write(file, current + "#{sql}\n")
+    end
+  end
+
   def initialize(options)
     @options = options
   end
@@ -16,6 +24,11 @@ class Psql
         logger.level = Logger.const_get(@options[:log_level].upcase)
         logger
       end
+  end
+
+  def run_copy(sql_command, file, url)
+    Psql.record_sql_file(sql_command, @options[:record_sql_file]) if @options[:record_sql_file]
+    run_psql_command("\\copy ( #{sql_command} ) to #{file}", url)
   end
 
   def run_psql_command(sql_command, url)
