@@ -5,7 +5,7 @@ require 'pg'
 class Helper
   def initialize
     @src = PG::Connection.open(dbname: 'test1', host: 'localhost')
-    @target = PG::Connection.open(dbname: 'test1', host: 'localhost')
+    @target = PG::Connection.open(dbname: 'test2', host: 'localhost')
   end
 
   def src_sql(sql, params = [])
