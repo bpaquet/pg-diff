@@ -3,8 +3,8 @@
 require_relative 'base'
 
 module Strategy
-  # Diff table in one shot
-  class Id < Base
+  # Diff table by iterating on ids
+  class ById < Base
     def _compute_key(suffix, operation, db)
       file = @options[:tmp_dir] + "/#{@table}_src_#{suffix}"
       @psql.run_copy("SELECT #{operation}(#{@options[:key]}) as k FROM #{@table}", file, db)

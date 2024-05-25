@@ -6,7 +6,7 @@ require 'parallel'
 
 require_relative 'stats'
 require_relative 'strategy/one_shot'
-require_relative 'strategy/id'
+require_relative 'strategy/by_id'
 
 options = {
   tmp_dir: '/tmp',
@@ -91,15 +91,8 @@ psql = Psql.new(options)
 to_do = []
 options[:tables].split(',').each do |table|
   logger.info("Preparing table #{table}")
-  strategy = case options[:strategy]
-             when 'one_shot'
-               Strategy::OneShot.new(options, psql, table)
-             when 'by_id'
-               Strategy::Id.new(options, psql, table)
-             else
-               raise "Unknown strategy: #{options[:strategy]}"
-             end
-  batches = strategy.batches
+  strategy_klass = "Strategy::#{options[:strategy].split('_').map(&:capitalize).join}"
+  batches = Object.const_get(strategy_klass).new(options, psql, table).batches
   logger.info("Comparing table #{table} with #{batches.size} batches, strategy: #{options[:strategy]}")
   to_do += batches.map { |batch| [table, batch] }
 end

@@ -5,8 +5,8 @@ module Strategy
   class Base
     def initialize(options, psql, table)
       @options = options
-      @table = table
       @psql = psql
+      @table = table
     end
 
     def logger
