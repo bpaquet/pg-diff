@@ -8,8 +8,20 @@ on:
 
 jobs:
   test:
-
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_USER: runner
+          POSTGRES_HOST_AUTH_METHOD: 'trust'
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
     steps:
     - uses: actions/checkout@v4
     - name: Set up Ruby
@@ -18,3 +30,9 @@ jobs:
         bundler-cache: true
     - name: Rubocop
       run: bundle exec rake rubocop
+    - name: Create test db
+      run: |
+        psql -h localhost -c "CREATE DATABASE test1"
+        psql -h localhost -c "CREATE DATABASE test2"
+    - name: Test
+      run: bundle exec rake test
