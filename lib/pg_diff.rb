@@ -76,7 +76,7 @@ OptionParser.new do |opts| # rubocop:disable Metrics/BlockLength
   end
 
   opts.on('--batch_size size', 'Number of lines in each batch') do |v|
-    options[:batch_size] = v.to_i
+    options[:batch_size] = v.to_f
   end
 
   opts.on('--log_level log_level', 'Log level') do |v|
