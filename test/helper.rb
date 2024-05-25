@@ -8,16 +8,18 @@ class Helper
     @target = PG::Connection.open(dbname: 'test2', host: 'localhost')
   end
 
-  def src_sql(sql)
-    @src.exec(sql)
+  def src_sql(sql, params = [])
+    @src.exec_params(sql, params)
   end
 
-  def target_sql(sql)
-    @target.exec(sql)
+  def target_sql(sql, params = [])
+    @target.exec_params(sql, params)
   end
 
-  def run_diff(options)
-    system "ruby lib/pg_diff.rb --src='postgresql://localhost/test1' --target='postgresql://localhost/test2' "\
-    " #{options} > /dev/null 2>&1"
+  def run_diff(options, display_output: false)
+    result = system("ruby lib/pg_diff.rb --src='postgresql://localhost/test1' " \
+                    "--target='postgresql://localhost/test2' #{options} > /tmp/output 2>&1")
+    puts File.read('/tmp/output') if display_output
+    result
   end
 end

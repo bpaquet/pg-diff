@@ -8,4 +8,5 @@ group :test do
   gem 'minitest'
   gem 'pg'
   gem 'rubocop'
+  gem 'rubocop-minitest'
 end

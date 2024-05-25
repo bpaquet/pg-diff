@@ -2,7 +2,7 @@
 
 require 'minitest/autorun'
 
-require_relative './helper'
+require_relative 'helper'
 class BasicTest < Minitest::Test
   def setup
     @helper = Helper.new
@@ -13,6 +13,7 @@ class BasicTest < Minitest::Test
   def test_empty
     @helper.src_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50));')
     @helper.target_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50));')
+
     assert @helper.run_diff('--tables test1')
   end
 
@@ -21,6 +22,7 @@ class BasicTest < Minitest::Test
     @helper.src_sql('INSERT INTO test1 VALUES (1, \'a\'), (2, \'b\');')
     @helper.target_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50));')
     @helper.target_sql('INSERT INTO test1 VALUES (1, \'a\'), (2, \'b\');')
+
     assert @helper.run_diff('--tables test1')
   end
 
@@ -29,6 +31,7 @@ class BasicTest < Minitest::Test
     @helper.src_sql('INSERT INTO test1 VALUES (1, \'a\'), (2, \'b\');')
     @helper.target_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50));')
     @helper.target_sql('INSERT INTO test1 VALUES (2, \'b\'), (1, \'a\');')
+
     assert @helper.run_diff('--tables test1')
   end
 
@@ -37,7 +40,8 @@ class BasicTest < Minitest::Test
     @helper.src_sql('INSERT INTO test1 VALUES (1, \'a\'), (2, \'b\');')
     @helper.target_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50));')
     @helper.target_sql('INSERT INTO test1 VALUES (1, \'a\'), (2, \'c\');')
-    assert !@helper.run_diff('--tables test1')
+
+    refute @helper.run_diff('--tables test1')
   end
 
   def test_with_one_two
@@ -45,7 +49,8 @@ class BasicTest < Minitest::Test
     @helper.src_sql('INSERT INTO test1 VALUES (1, \'a\');')
     @helper.target_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50));')
     @helper.target_sql('INSERT INTO test1 VALUES (1, \'a\'), (2, \'b\');')
-    assert !@helper.run_diff('--tables test1')
+
+    refute @helper.run_diff('--tables test1')
   end
 
   def test_with_two_one
@@ -53,6 +58,7 @@ class BasicTest < Minitest::Test
     @helper.src_sql('INSERT INTO test1 VALUES (1, \'a\'), (2, \'b\');')
     @helper.target_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50));')
     @helper.target_sql('INSERT INTO test1 VALUES (1, \'a\');')
-    assert !@helper.run_diff('--tables test1')
+
+    refute @helper.run_diff('--tables test1')
   end
 end
