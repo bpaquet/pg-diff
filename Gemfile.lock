@@ -50,6 +50,7 @@ DEPENDENCIES
   rubocop
   rubocop-minitest
   rubocop-rake
+  ruby-progressbar
 
 BUNDLED WITH
    2.5.9

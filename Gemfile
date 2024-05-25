@@ -3,6 +3,7 @@
 source 'https://rubygems.org'
 
 gem 'parallel'
+gem 'ruby-progressbar'
 
 group :test do
   gem 'minitest'

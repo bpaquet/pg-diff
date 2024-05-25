@@ -90,6 +90,7 @@ logger.level = options[:log_level]
 psql = Psql.new(options)
 to_do = []
 options[:tables].split(',').each do |table|
+  logger.info("Preparing table #{table}")
   strategy = case options[:strategy]
              when 'one_shot'
                Strategy::OneShot.new(options, psql, table)
