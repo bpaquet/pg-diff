@@ -24,8 +24,8 @@ OptionParser.new do |opts|
     options[:src] = v
   end
 
-  opts.on('--to to_url', 'Url of the target database, like postgresql://127.0.0.1/to') do |v|
-    options[:to] = v
+  opts.on('--target target_url', 'Url of the target database, like postgresql://127.0.0.1/to') do |v|
+    options[:target] = v
   end
 
   opts.on('--tables tables', 'Comma separated list of table to compare') do |v|
@@ -37,7 +37,7 @@ OptionParser.new do |opts|
   end
 end.parse!
 
-%i[src to tables].each do |key|
+%i[src target tables].each do |key|
   raise "Missing --#{key} option" unless options[key]
 end
 
@@ -49,10 +49,11 @@ logger.level = Logger.const_get(options[:log_level].upcase)
 psql = Psql.new(options)
 options[:tables].split(',').each do |table|
   src_file = "#{options[:tmp_dir]}/pg_diff_src_#{table}"
-  to_file = "#{options[:tmp_dir]}/pg_diff_to_#{table}"
+  target_file = "#{options[:tmp_dir]}/pg_diff_target_#{table}"
   psql.run_psql_command("\\copy ( select * from #{table} ORDER BY #{options[:order_by]} ) to #{src_file}",
                         options[:src])
-  psql.run_psql_command("\\copy ( select * from #{table} ORDER BY #{options[:order_by]} ) to #{to_file}", options[:to])
-  system("diff -du #{src_file} #{to_file}") || raise("Tables #{table} are different!")
+  psql.run_psql_command("\\copy ( select * from #{table} ORDER BY #{options[:order_by]} ) to #{target_file}",
+                        options[:target])
+  system("diff -du #{src_file} #{target_file}") || raise("Tables #{table} are different!")
   logger.info("Tables #{table} are the same")
 end
