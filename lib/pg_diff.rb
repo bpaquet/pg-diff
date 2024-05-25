@@ -50,7 +50,7 @@ OptionParser.new do |opts| # rubocop:disable Metrics/BlockLength
   end
 
   opts.on('--parallel parallel', 'Number of parallel threads') do |v|
-    options[:parallel] = v
+    options[:parallel] = v.to_i
   end
 
   opts.on('--record_sql_file file', 'File to log all sql request') do |v|
