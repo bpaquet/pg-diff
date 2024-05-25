@@ -95,4 +95,35 @@ class IdTest < Minitest::Test
       'select * from test1 WHERE id >= -50 AND id < 50 ORDER BY id'
     ], sql_commands.uniq
   end
+
+  def test_with_two_lines_max # rubocop:disable Metrics/MethodLength
+    @helper.src_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50));')
+    @helper.src_sql('INSERT INTO test1 VALUES (1, \'a\'), (200, \'b\');')
+    @helper.target_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50));')
+    @helper.target_sql('INSERT INTO test1 VALUES (1, \'a\'), (2000, \'b\');')
+
+    refute @helper.run_diff(OPTIONS)
+
+    assert_equal [
+      'SELECT min(id) as k FROM test1',
+      'SELECT max(id) as k FROM test1',
+      'select * from test1 WHERE id >= 1 AND id < 1001 ORDER BY id',
+      'select * from test1 WHERE id >= 1001 AND id < 2001 ORDER BY id'
+    ], sql_commands.uniq
+  end
+
+  def test_with_two_lines_min
+    @helper.src_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50));')
+    @helper.src_sql('INSERT INTO test1 VALUES (1, \'a\'), (200, \'b\');')
+    @helper.target_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50));')
+    @helper.target_sql('INSERT INTO test1 VALUES (-200, \'a\'), (200, \'b\');')
+
+    refute @helper.run_diff(OPTIONS)
+
+    assert_equal [
+      'SELECT min(id) as k FROM test1',
+      'SELECT max(id) as k FROM test1',
+      'select * from test1 WHERE id >= -200 AND id < 800 ORDER BY id'
+    ], sql_commands.uniq
+  end
 end
