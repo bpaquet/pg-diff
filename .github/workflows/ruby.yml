@@ -31,7 +31,7 @@ jobs:
       run: bundle exec rake rubocop
     - name: Test
       env:
-        PG_HOST: posgres
-        PG_USER: posgres
-        PG_PASSWORD: posgres
+        PG_HOST: postgres
+        PG_USER: postgres
+        PG_PASSWORD: postgres
       run: bundle exec rake test
