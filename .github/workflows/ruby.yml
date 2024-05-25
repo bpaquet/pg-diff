@@ -30,4 +30,8 @@ jobs:
     - name: Rubocop
       run: bundle exec rake rubocop
     - name: Test
+      env:
+        PG_HOST: posgres
+        PG_USER: posgres
+        PG_PASSWORD: posgres
       run: bundle exec rake test
