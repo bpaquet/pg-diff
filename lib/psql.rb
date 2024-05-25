@@ -44,7 +44,7 @@ class Psql
     else
       puts File.read(output.path)
       output.unlink
-      raise('Failed to run psql command')
+      raise("Failed to run psql command on #{url}")
     end
   end
 end

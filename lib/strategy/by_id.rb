@@ -5,9 +5,9 @@ require_relative 'base'
 module Strategy
   # Diff table by iterating on ids
   class ById < Base
-    def _compute_key(suffix, operation, db)
+    def _compute_key(suffix, operation, db, table)
       file = @options[:tmp_dir] + "/#{@table}_src_#{suffix}"
-      @psql.run_copy("SELECT #{operation}(#{@options[:key]}) as k FROM #{@table}", file, db)
+      @psql.run_copy("SELECT #{operation}(#{@options[:key]}) as k FROM #{table}", file, db)
       result = File.read(file).strip.to_i
       File.unlink(file)
       result
@@ -16,8 +16,8 @@ module Strategy
     def compute_key(suffix, operation)
       logger.info("Computing #{operation} key for #{@table}, key: #{@options[:key]}")
       [
-        _compute_key("#{suffix}_src", operation, @options[:src]),
-        _compute_key("#{suffix}_target", operation, @options[:target])
+        _compute_key("#{suffix}_src", operation, @options[:src], @table),
+        _compute_key("#{suffix}_target", operation, @options[:target], @target_table)
       ].send(operation.to_sym)
     end
 
