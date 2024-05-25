@@ -4,15 +4,19 @@ require 'optparse'
 require 'logger'
 require 'parallel'
 
+require_relative 'stats'
 require_relative 'strategy/one_shot'
+require_relative 'strategy/id'
 
 options = {
   tmp_dir: '/tmp',
   psql: 'psql',
-  log_level: 'info',
+  log_level: Logger::INFO,
   order_by: 'id',
   strategy: 'one_shot',
-  parallel: 4
+  parallel: 4,
+  batch_size: 1000,
+  key: 'id'
 }
 
 OptionParser.new do |opts| # rubocop:disable Metrics/BlockLength
@@ -52,6 +56,26 @@ OptionParser.new do |opts| # rubocop:disable Metrics/BlockLength
   opts.on('--record_sql_file file', 'File to log all sql request') do |v|
     options[:record_sql_file] = v
   end
+
+  opts.on('--key key', 'Column used to split') do |v|
+    options[:key] = v
+  end
+
+  opts.on('--key_start key', 'Where to start the diff. If not specified, min(key) will be called') do |v|
+    options[:key_start] = v
+  end
+
+  opts.on('--key_stop key', 'Where to stop the diff. If not specified, max(key) will be called') do |v|
+    options[:key_stop] = v
+  end
+
+  opts.on('--batch_size size', 'Number of lines in each batch') do |v|
+    options[:batch_size] = v.to_i
+  end
+
+  opts.on('--log_level log_level', 'Log level') do |v|
+    options[:log_level] = Logger.const_get(v.upcase)
+  end
 end.parse!
 
 %i[src target tables].each do |key|
@@ -61,14 +85,16 @@ end
 require_relative 'psql'
 
 logger = Logger.new($stdout)
-logger.level = Logger.const_get(options[:log_level].upcase)
+logger.level = options[:log_level]
 
 psql = Psql.new(options)
 to_do = []
 options[:tables].split(',').each do |table|
   strategy = case options[:strategy]
              when 'one_shot'
-               Strategy::OneShot.new
+               Strategy::OneShot.new(options, psql, table)
+             when 'by_id'
+               Strategy::Id.new(options, psql, table)
              else
                raise "Unknown strategy: #{options[:strategy]}"
              end
@@ -77,15 +103,30 @@ options[:tables].split(',').each do |table|
   to_do += batches.map { |batch| [table, batch] }
 end
 
-logger.info("Number of batch: #{to_do.size}")
-Parallel.each(to_do, in_threads: options[:parallel]) do |table, batch|
+logger.warn("Number of batches: #{to_do.size}")
+Parallel.each(to_do, in_threads: options[:parallel], progress: 'Diffing ...') do |table, batch|
   src_file = "#{options[:tmp_dir]}/pg_diff_src_#{table}_#{batch[:name]}"
   target_file = "#{options[:tmp_dir]}/pg_diff_target_#{table}_#{batch[:name]}"
   Parallel.each([[src_file, options[:src]], [target_file, options[:target]]], in_threads: 2) do |file, db|
     psql.run_copy("select * from #{table} WHERE #{batch[:where]} ORDER BY #{options[:order_by]}", file, db)
   end
-  system("diff -du #{src_file} #{target_file}") || raise("Tables #{table} are different!")
-  logger.info("Tables #{table} are the same, file size: #{File.size(src_file)}")
+  result = system("diff -du #{src_file} #{target_file}")
+  count = `wc -l #{src_file}`.to_i
+  Stats.add_lines(count)
+  size = File.size(src_file)
   File.unlink(src_file)
   File.unlink(target_file)
+  if result
+    logger.info("No error on batch #{batch[:name]}, file size: #{size}, #{count} lines")
+  else
+    logger.error("Error on batch #{batch[:name]} file size: #{size}, #{count} lines")
+    Stats.add_error("Errors on batch: #{batch[:name]}")
+  end
+end
+
+if Stats.all_errors.any?
+  logger.error("Errors found: #{Stats.all_errors.count}: #{Stats.all_errors.join(', ')}")
+  exit 1
+else
+  logger.warn("No error found in #{to_do.size} batches, #{Stats.all_lines} lines compared")
 end

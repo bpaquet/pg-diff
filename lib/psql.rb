@@ -21,7 +21,7 @@ class Psql
     @logger ||=
       begin
         logger = Logger.new($stdout)
-        logger.level = Logger.const_get(@options[:log_level].upcase)
+        logger.level = @options[:log_level]
         logger
       end
   end
@@ -32,7 +32,7 @@ class Psql
   end
 
   def run_psql_command(sql_command, url)
-    logger.info("Running toward #{url}: #{sql_command}")
+    logger.debug("Running toward #{url}: #{sql_command}")
     f = Tempfile.new('sql')
     output = Tempfile.new('output')
     f.write(sql_command)

@@ -3,7 +3,7 @@
 require 'minitest/autorun'
 
 require_relative 'helper'
-class BasicTest < Minitest::Test
+class OneShotTest < Minitest::Test
   LOG_FILE = '/tmp/sql.log'
   OPTIONS = "--tables test1 --strategy=one_shot --record_sql_file #{LOG_FILE}".freeze
 
