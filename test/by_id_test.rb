@@ -73,9 +73,9 @@ class ByIdTest < Minitest::Test
     assert_equal [
       'SELECT min(id) as k FROM test1',
       'SELECT max(id) as k FROM test1',
-      'select * from test1 WHERE id >= 1 AND id < 71 ORDER BY id',
-      'select * from test1 WHERE id >= 71 AND id < 141 ORDER BY id',
-      'select * from test1 WHERE id >= 141 AND id < 211 ORDER BY id'
+      'select * from test1 WHERE id >= 1 AND id < 71.0 ORDER BY id',
+      'select * from test1 WHERE id >= 71.0 AND id < 141.0 ORDER BY id',
+      'select * from test1 WHERE id >= 141.0 AND id < 211.0 ORDER BY id'
     ], sql_commands.uniq
   end
 
@@ -92,7 +92,7 @@ class ByIdTest < Minitest::Test
     assert @helper.run_diff("#{OPTIONS} --key_start=-50 --key_stop=20 --batch_size=100", display_output: false)
 
     assert_equal [
-      'select * from test1 WHERE id >= -50 AND id < 50 ORDER BY id'
+      'select * from test1 WHERE id >= -50 AND id < 50.0 ORDER BY id'
     ], sql_commands.uniq
   end
 

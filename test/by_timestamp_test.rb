@@ -5,7 +5,8 @@ require 'minitest/autorun'
 require_relative 'helper'
 class ByTimestampTest < Minitest::Test
   LOG_FILE = '/tmp/sql.log'
-  OPTIONS = "--tables test1 --strategy=by_timestamp --key=created_at --record_sql_file #{LOG_FILE}".freeze
+  OPTIONS = '--tables test1 --strategy=by_timestamp --key=created_at ' \
+            "--batch_size=10 --record_sql_file #{LOG_FILE}".freeze
 
   def setup
     FileUtils.rm_f(LOG_FILE)
@@ -18,20 +19,23 @@ class ByTimestampTest < Minitest::Test
     File.readlines(LOG_FILE).map(&:strip)
   end
 
-  def test_with_two_lines
-    now = Time.now
+  def test_with_two_lines # rubocop:disable Metrics/MethodLength,Metrics/AbcSize
+    now = Time.now.utc
     @helper.src_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50), created_at TIMESTAMP);')
     @helper.src_sql('INSERT INTO test1 VALUES (1, \'a\', $1), (200, \'b\', $2);', [now, now + 4])
     @helper.target_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50), created_at TIMESTAMP);')
     @helper.target_sql('INSERT INTO test1 VALUES (1, \'a\', $1), (200, \'b\', $2);', [now, now + 4])
 
-    assert @helper.run_diff(OPTIONS, display_output: true)
+    assert @helper.run_diff(OPTIONS)
 
-    assert_equal [
+    now_str = now.strftime('%Y-%m-%dT%H:%M:%S%:z')
+    now_stop_str = (now + (10 * 3600 * 24)).strftime('%Y-%m-%dT%H:%M:%S%:z')
+
+    assert_equal sql_commands.uniq, [
       'SELECT min(created_at) as k FROM test1',
       'SELECT max(created_at) as k FROM test1',
-      "select * from test1 WHERE created_at >= '#{now}' AND created_at < '#{now}' ORDER BY id"
-    ], sql_commands.uniq
+      "select * from test1 WHERE created_at >= '#{now_str}' AND created_at < '#{now_stop_str}' ORDER BY id"
+    ]
   end
 
   # def test_with_two_lines
@@ -49,7 +53,7 @@ class ByTimestampTest < Minitest::Test
   #   ], sql_commands.uniq
   # end
 
-  # def test_with_two_lines_negative_start # rubocop:disable Metrics/MethodLength
+  # def test_with_two_lines_negative_start
   #   @helper.src_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50));')
   #   @helper.src_sql('INSERT INTO test1 VALUES (-1000, \'a\'), (200, \'b\');')
   #   @helper.target_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50));')
@@ -65,7 +69,7 @@ class ByTimestampTest < Minitest::Test
   #   ], sql_commands.uniq
   # end
 
-  # def test_with_two_lines_batch_size # rubocop:disable Metrics/MethodLength
+  # def test_with_two_lines_batch_size
   #   @helper.src_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50));')
   #   @helper.src_sql('INSERT INTO test1 VALUES (1, \'a\'), (200, \'b\');')
   #   @helper.target_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50));')
@@ -99,7 +103,7 @@ class ByTimestampTest < Minitest::Test
   #   ], sql_commands.uniq
   # end
 
-  # def test_with_two_lines_max # rubocop:disable Metrics/MethodLength
+  # def test_with_two_lines_max
   #   @helper.src_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50));')
   #   @helper.src_sql('INSERT INTO test1 VALUES (1, \'a\'), (200, \'b\');')
   #   @helper.target_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50));')

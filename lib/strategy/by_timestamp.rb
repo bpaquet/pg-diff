@@ -7,7 +7,7 @@ module Strategy
   # Diff table by iterating on numerical ids
   class ByTimestamp < ById
     def str_to_key(str)
-      return nil if str.nil? || str == "\\N"
+      return nil if str.nil? || str == '\\N'
 
       DateTime.parse(str)
     end
@@ -18,6 +18,5 @@ module Strategy
         where: "#{@options[:key]} >= '#{current}' AND #{@options[:key]} < '#{next_current}'"
       }
     end
-
   end
 end
