@@ -22,11 +22,11 @@ module Strategy
     end
 
     def key_start
-      @key_start ||= @options[:key_start] || compute_key('start', 'min')
+      @key_start ||= @options[:key_start]&.to_i || compute_key('start', 'min')
     end
 
     def key_stop
-      @key_stop ||= @options[:key_stop] || (compute_key('stop', 'max') + 1)
+      @key_stop ||= @options[:key_stop]&.to_i || (compute_key('stop', 'max') + 1)
     end
 
     def build_batch(current, next_current)
