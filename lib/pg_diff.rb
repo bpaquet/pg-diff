@@ -132,7 +132,7 @@ Parallel.each(to_do, in_threads: options[:parallel], progress: 'Diffing ...') do
   target_sql.close
 
   wc_file = Tempfile.new("wc_#{table}")
-  command = 'diff ' \
+  command = 'diff --speed-large-file ' \
             "<(psql #{options[:src]} -v ON_ERROR_STOP=on -f #{src_sql.path} | tee >(wc -l > #{wc_file.path})) " \
             "<(psql #{options[:target]} -v ON_ERROR_STOP=on -f #{target_sql.path}) " \
 
