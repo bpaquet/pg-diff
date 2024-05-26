@@ -47,4 +47,16 @@ class Psql
       raise("Failed to run psql command on #{url}")
     end
   end
+
+  def columns(table, suffix, url)
+    run_copy(
+      'SELECT column_name, is_nullable FROM information_schema.columns ' \
+      "where (table_schema || '.' || table_name='#{table}')  " \
+      "or (table_schema = 'public' and table_name='#{table}') order by ordinal_position",
+      "#{@options[:tmp_dir]}/pg_diffs_schema_#{suffix}_#{table}", url
+    )
+    File.readlines("#{@options[:tmp_dir]}/pg_diffs_schema_#{suffix}_#{table}").to_h do |line|
+      line.strip.split("\t")
+    end
+  end
 end

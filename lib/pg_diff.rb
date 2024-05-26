@@ -99,14 +99,30 @@ to_do = []
 options[:tables].split(',').each do |table|
   target_table = options[:table_mapping].gsub('<TABLE>', table)
   logger.info("Preparing table #{table}")
+  src_columns = psql.columns(table, 'src', options[:src])
+  key = options[:key]
+  raise("Missing key #{key} in table #{table}") unless src_columns[key]
+  raise("Key #{key} not nullable in table #{table}") unless src_columns[key] == 'NO'
+
+  src_columns = src_columns.keys.sort
+  target_columns = psql.columns(target_table, 'target', options[:target]).keys.sort
+
+  if src_columns & target_columns != src_columns
+    raise("Missing columns in target table #{target_table}: #{src_columns - target_columns}")
+  end
+
   strategy_klass = "Strategy::#{options[:strategy].split('_').map(&:capitalize).join}"
   batches = Object.const_get(strategy_klass).new(options, psql, table, target_table).batches
   logger.info("Comparing table #{table} with #{batches.size} batches, strategy: #{options[:strategy]}")
-  to_do += batches.map { |batch| [table, target_table, batch] }
+  logger.info("Table: #{table}: key: #{key}, columns: #{src_columns.join(', ')}")
+  if src_columns != target_columns
+    logger.warn("Different columns in target table #{target_table}: #{target_columns - src_columns}")
+  end
+  to_do += batches.map { |batch| [table, src_columns, target_table, batch] }
 end
 
 logger.warn("Number of batches: #{to_do.size}")
-Parallel.each(to_do, in_threads: options[:parallel], progress: 'Diffing ...') do |table, target_table, batch|
+Parallel.each(to_do, in_threads: options[:parallel], progress: 'Diffing ...') do |table, columns, target_table, batch|
   src_file = "#{options[:tmp_dir]}/pg_diff_src_#{table}_#{batch[:name]}"
   target_file = "#{options[:tmp_dir]}/pg_diff_target_#{target_table}_#{batch[:name]}"
   Parallel.each(
@@ -115,7 +131,9 @@ Parallel.each(to_do, in_threads: options[:parallel], progress: 'Diffing ...') do
       [target_file, target_table, options[:target]]
     ], in_threads: 2
   ) do |file, real_table, db|
-    psql.run_copy("select * from #{real_table} WHERE #{batch[:where]} ORDER BY #{options[:order_by]}", file, db)
+    psql.run_copy(
+      "select #{columns.join(', ')} from #{real_table} WHERE #{batch[:where]} ORDER BY #{options[:order_by]}", file, db
+    )
   end
   result = system("diff -du #{src_file} #{target_file}")
   count = `wc -l #{src_file}`.to_i

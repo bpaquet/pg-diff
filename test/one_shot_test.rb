@@ -15,12 +15,12 @@ class OneShotTest < Minitest::Test
   end
 
   def sql_commands
-    File.readlines(LOG_FILE).map(&:strip)
+    File.readlines(LOG_FILE).map(&:strip).reject { |sql| sql.include?('information_schema.columns') }
   end
 
   EXPECTED_SQL = [
-    'select * from test1 WHERE 1 = 1 ORDER BY id',
-    'select * from test1 WHERE 1 = 1 ORDER BY id'
+    'select id, name from test1 WHERE 1 = 1 ORDER BY id',
+    'select id, name from test1 WHERE 1 = 1 ORDER BY id'
   ].freeze
 
   def test_empty
