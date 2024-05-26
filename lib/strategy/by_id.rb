@@ -15,10 +15,12 @@ module Strategy
 
     def compute_key(suffix, operation)
       logger.info("[#{@table}] Computing #{operation} for key: #{@options[:key]}")
-      [
-        _compute_key("#{suffix}_src", operation, @options[:src], @table),
-        _compute_key("#{suffix}_target", operation, @options[:target], @target_table)
-      ].send(operation.to_sym)
+      Parallel.map([
+                     ["#{suffix}_src", operation, @options[:src], @table],
+                     ["#{suffix}_target", operation, @options[:target], @target_table]
+                   ]) do |local_suffix, local_operation, db, table|
+        _compute_key(local_suffix, local_operation, db, table)
+      end.send(operation.to_sym)
     end
 
     def str_to_key(str)
