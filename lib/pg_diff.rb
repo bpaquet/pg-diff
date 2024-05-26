@@ -98,7 +98,7 @@ psql = Psql.new(options)
 to_do = []
 options[:tables].split(',').each do |table|
   target_table = options[:table_mapping].gsub('<TABLE>', table)
-  logger.info("[#{table}] Preparing table")
+  logger.warn("[#{table}] Preparing table")
   src_columns = psql.columns(table, 'src', options[:src])
   key = options[:key]
   raise("[#{table}] Missing key #{key}") unless src_columns[key]
@@ -123,28 +123,34 @@ end
 
 logger.warn("Number of batches: #{to_do.size}, parallelism: #{options[:parallel]}")
 Parallel.each(to_do, in_threads: options[:parallel], progress: 'Diffing ...') do |table, columns, target_table, batch|
-  src_file = "#{options[:tmp_dir]}/pg_diff_src_#{table}_#{batch[:name]}"
-  target_file = "#{options[:tmp_dir]}/pg_diff_target_#{target_table}_#{batch[:name]}"
-  Parallel.each(
-    [
-      [src_file, table, options[:src]],
-      [target_file, target_table, options[:target]]
-    ], in_threads: 2
-  ) do |file, real_table, db|
-    psql.run_copy(
-      "select #{columns.join(', ')} from #{real_table} WHERE #{batch[:where]} ORDER BY #{options[:order_by]}", file, db
-    )
-  end
-  result = system("diff #{src_file} #{target_file}")
-  count = `wc -l #{src_file}`.to_i
+  src_sql = Tempfile.new("src_#{table}")
+  src_sql.write("COPY ( select #{columns.join(', ')} from #{table} WHERE #{batch[:where]} ORDER BY #{options[:order_by]}) TO STDOUT;")
+  src_sql.close
+
+  target_sql = Tempfile.new("src_#{table}")
+  target_sql.write("COPY ( select #{columns.join(', ')} from #{target_table} WHERE #{batch[:where]} ORDER BY #{options[:order_by]}) TO STDOUT;")
+  target_sql.close
+
+  wc_file = Tempfile.new("wc_#{table}")
+  command = 'diff ' \
+            "<(psql #{options[:src]} -v ON_ERROR_STOP=on -f #{src_sql.path} | tee >(wc -l > #{wc_file.path})) " \
+            "<(psql #{options[:target]} -v ON_ERROR_STOP=on -f #{target_sql.path}) " \
+
+  bash = Tempfile.new("bash_#{table}")
+  bash.write(command)
+  bash.close
+  result = system("cat #{bash.path} | bash")
+  count = File.read(wc_file.path).to_i
   Stats.add_lines(count)
-  size = File.size(src_file)
-  File.unlink(src_file)
-  File.unlink(target_file)
+  File.unlink(src_sql)
+  File.unlink(target_sql)
+  File.unlink(wc_file)
+  File.unlink(bash)
+
   if result
-    logger.info("[#{table}] No error on batch #{batch[:name]}, file size: #{size}, #{count} lines")
+    logger.info("[#{table}] No error on batch #{batch[:name]}, #{count} lines")
   else
-    logger.error("[#{table}] Error on batch #{batch[:name]} file size: #{size}, #{count} lines")
+    logger.error("[#{table}] Error on batch #{batch[:name]}, #{count} lines")
     Stats.add_error("[#{table}] Errors on batch: #{batch[:name]}")
   end
 end
