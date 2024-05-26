@@ -104,8 +104,8 @@ options[:tables].split(',').each do |table|
   raise("[#{table}] Missing key #{key}") unless src_columns[key]
   raise("[#{table}] Key #{key} is nullable") unless src_columns[key] == 'NO'
 
-  src_columns = src_columns.keys.sort
-  target_columns = psql.columns(target_table, 'target', options[:target]).keys.sort
+  src_columns = src_columns.keys
+  target_columns = psql.columns(target_table, 'target', options[:target]).keys
 
   if src_columns & target_columns != src_columns
     raise("[#{table}] Missing columns in target table #{target_table}: #{src_columns - target_columns}")
