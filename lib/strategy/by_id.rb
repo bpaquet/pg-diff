@@ -30,25 +30,38 @@ module Strategy
     end
 
     def key_stop
-      @key_stop ||=  str_to_key(@options[:key_stop]) || (compute_key('stop', 'max') + 1)
+      @key_stop ||= str_to_key(@options[:key_stop]) || compute_key('stop', 'max')
+    end
+
+    def key_to_pg(key)
+      key
     end
 
     def build_batch(current, next_current)
       {
         name: "#{@table}_#{current}",
-        where: "#{@options[:key]} >= #{current} AND #{@options[:key]} < #{next_current}"
+        where: "#{@options[:key]} >= #{key_to_pg(current)} AND #{@options[:key]} < #{key_to_pg(next_current)}"
       }
     end
 
     def build_next_key(current)
-      current + @options[:batch_size]
+      current + @options[:batch_size].to_i
+    end
+
+    def empty_batch
+      {
+        name: "empty_#{@table}",
+        where: '1 = 1'
+      }
     end
 
     def batches
       logger.info("Key range: #{key_start} - #{key_stop}")
       result = []
+      return [empty_batch] if key_start.nil? || key_stop.nil?
+
       current = key_start
-      while current < key_stop
+      while current < (key_stop + 1)
         next_current = build_next_key(current)
         result << build_batch(current, next_current)
         current = next_current

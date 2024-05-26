@@ -19,6 +19,19 @@ class ByTimestampTest < Minitest::Test
     File.readlines(LOG_FILE).map(&:strip)
   end
 
+  def test_empty
+    @helper.src_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50), created_at TIMESTAMP);')
+    @helper.target_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50), created_at TIMESTAMP);')
+
+    assert @helper.run_diff(OPTIONS)
+
+    assert_equal [
+      'SELECT min(created_at) as k FROM test1',
+      'SELECT max(created_at) as k FROM test1',
+      'select * from test1 WHERE 1 = 1 ORDER BY id'
+    ], sql_commands.uniq
+  end
+
   def test_with_two_lines # rubocop:disable Metrics/MethodLength,Metrics/AbcSize
     now = Time.now.utc
     @helper.src_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50), created_at TIMESTAMP);')
