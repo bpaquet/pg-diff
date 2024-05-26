@@ -18,7 +18,7 @@ module Strategy
       Parallel.map([
                      ["#{suffix}_src", operation, @options[:src], @table],
                      ["#{suffix}_target", operation, @options[:target], @target_table]
-                   ]) do |local_suffix, local_operation, db, table|
+                   ], in_threads: 2) do |local_suffix, local_operation, db, table|
         _compute_key(local_suffix, local_operation, db, table)
       end.send(operation.to_sym)
     end
@@ -57,7 +57,10 @@ module Strategy
       }
     end
 
-    def batches
+    def batches # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+      # Precompute key_start and key_stop
+      Parallel.each(%i[key_start key_stop], in_threads: 2) { |method| send(method) }
+
       logger.info("[#{@table}] Key range: #{key_start} - #{key_stop}")
       result = []
       return [empty_batch] if key_start.nil? || key_stop.nil?
