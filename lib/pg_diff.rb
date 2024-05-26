@@ -98,25 +98,25 @@ psql = Psql.new(options)
 to_do = []
 options[:tables].split(',').each do |table|
   target_table = options[:table_mapping].gsub('<TABLE>', table)
-  logger.info("Preparing table #{table}")
+  logger.info("[#{table}] Preparing table")
   src_columns = psql.columns(table, 'src', options[:src])
   key = options[:key]
-  raise("Missing key #{key} in table #{table}") unless src_columns[key]
-  raise("Key #{key} not nullable in table #{table}") unless src_columns[key] == 'NO'
+  raise("[#{table}] Missing key #{key}") unless src_columns[key]
+  raise("[#{table}] Key #{key} is nullable") unless src_columns[key] == 'NO'
 
   src_columns = src_columns.keys.sort
   target_columns = psql.columns(target_table, 'target', options[:target]).keys.sort
 
   if src_columns & target_columns != src_columns
-    raise("Missing columns in target table #{target_table}: #{src_columns - target_columns}")
+    raise("[#{table}] Missing columns in target table #{target_table}: #{src_columns - target_columns}")
   end
 
   strategy_klass = "Strategy::#{options[:strategy].split('_').map(&:capitalize).join}"
   batches = Object.const_get(strategy_klass).new(options, psql, table, target_table).batches
-  logger.info("Comparing table #{table} with #{batches.size} batches, strategy: #{options[:strategy]}")
-  logger.info("Table: #{table}: key: #{key}, columns: #{src_columns.join(', ')}")
+  logger.info("[#{table}] Comparing with #{batches.size} batches, strategy: #{options[:strategy]}")
+  logger.info("[#{table}] key: #{key}, columns: #{src_columns.join(', ')}")
   if src_columns != target_columns
-    logger.warn("Different columns in target table #{target_table}: #{target_columns - src_columns}")
+    logger.warn("[#{table}] Different columns in target table #{target_table}: #{target_columns - src_columns}")
   end
   to_do += batches.map { |batch| [table, src_columns, target_table, batch] }
 end
@@ -135,17 +135,17 @@ Parallel.each(to_do, in_threads: options[:parallel], progress: 'Diffing ...') do
       "select #{columns.join(', ')} from #{real_table} WHERE #{batch[:where]} ORDER BY #{options[:order_by]}", file, db
     )
   end
-  result = system("diff -du #{src_file} #{target_file}")
+  result = system("diff #{src_file} #{target_file}")
   count = `wc -l #{src_file}`.to_i
   Stats.add_lines(count)
   size = File.size(src_file)
   File.unlink(src_file)
   File.unlink(target_file)
   if result
-    logger.info("No error on batch #{batch[:name]}, file size: #{size}, #{count} lines")
+    logger.info("[#{table}] No error on batch #{batch[:name]}, file size: #{size}, #{count} lines")
   else
-    logger.error("Error on batch #{batch[:name]} file size: #{size}, #{count} lines")
-    Stats.add_error("Errors on batch: #{batch[:name]}")
+    logger.error("[#{table}] Error on batch #{batch[:name]} file size: #{size}, #{count} lines")
+    Stats.add_error("[#{table}] Errors on batch: #{batch[:name]}")
   end
 end
 

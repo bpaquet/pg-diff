@@ -14,7 +14,7 @@ module Strategy
     end
 
     def compute_key(suffix, operation)
-      logger.info("Computing #{operation} key for #{@table}, key: #{@options[:key]}")
+      logger.info("[#{@table}] Computing #{operation} for key: #{@options[:key]}")
       [
         _compute_key("#{suffix}_src", operation, @options[:src], @table),
         _compute_key("#{suffix}_target", operation, @options[:target], @target_table)
@@ -56,7 +56,7 @@ module Strategy
     end
 
     def batches
-      logger.info("Key range: #{key_start} - #{key_stop}")
+      logger.info("[#{@table}] Key range: #{key_start} - #{key_stop}")
       result = []
       return [empty_batch] if key_start.nil? || key_stop.nil?
 
