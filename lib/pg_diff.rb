@@ -121,7 +121,7 @@ options[:tables].split(',').each do |table|
   to_do += batches.map { |batch| [table, src_columns, target_table, batch] }
 end
 
-logger.warn("Number of batches: #{to_do.size}")
+logger.warn("Number of batches: #{to_do.size}, parallelism: #{options[:parallel]}")
 Parallel.each(to_do, in_threads: options[:parallel], progress: 'Diffing ...') do |table, columns, target_table, batch|
   src_file = "#{options[:tmp_dir]}/pg_diff_src_#{table}_#{batch[:name]}"
   target_file = "#{options[:tmp_dir]}/pg_diff_target_#{target_table}_#{batch[:name]}"
