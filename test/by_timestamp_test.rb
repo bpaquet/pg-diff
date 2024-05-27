@@ -32,7 +32,7 @@ class ByTimestampTest < Minitest::Test
     ], sql_commands
   end
 
-  def test_with_two_lines # rubocop:disable Metrics/MethodLength
+  def test_with_two_lines # rubocop:disable Metrics/MethodLength,Metrics/AbcSize
     now = Time.now
     @helper.src_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50), created_at TIMESTAMP NOT NULL);')
     @helper.src_sql('INSERT INTO test1 VALUES (1, \'a\', $1), (200, \'b\', $2);', [now, now + (4 * 3600 * 24)])
