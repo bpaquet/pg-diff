@@ -44,8 +44,8 @@ module Strategy
       }
     end
 
-    def build_next_key(current)
-      current + @options[:batch_size].to_i
+    def build_next_key(current, increment)
+      current + increment.to_i
     end
 
     def empty_batch
@@ -64,8 +64,8 @@ module Strategy
       return [empty_batch] if key_start.nil? || key_stop.nil?
 
       current = key_start
-      while current < (key_stop + 1)
-        next_current = build_next_key(current)
+      while current < build_next_key(key_stop, 1)
+        next_current = build_next_key(current, @options[:batch_size])
         result << build_batch(current, next_current)
         current = next_current
       end

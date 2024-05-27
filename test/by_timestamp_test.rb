@@ -33,16 +33,16 @@ class ByTimestampTest < Minitest::Test
   end
 
   def test_with_two_lines # rubocop:disable Metrics/MethodLength
-    now = DateTime.now.new_offset(0)
+    now = Time.now
     @helper.src_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50), created_at TIMESTAMP NOT NULL);')
-    @helper.src_sql('INSERT INTO test1 VALUES (1, \'a\', $1), (200, \'b\', $2);', [now, now + 4])
+    @helper.src_sql('INSERT INTO test1 VALUES (1, \'a\', $1), (200, \'b\', $2);', [now, now + (4 * 3600 * 24)])
     @helper.target_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50), created_at TIMESTAMP NOT NULL);')
-    @helper.target_sql('INSERT INTO test1 VALUES (1, \'a\', $1), (200, \'b\', $2);', [now, now + 4])
+    @helper.target_sql('INSERT INTO test1 VALUES (1, \'a\', $1), (200, \'b\', $2);', [now, now + (4 * 3600 * 24)])
 
     assert @helper.run_diff(OPTIONS)
 
-    now_str = now.strftime('%Y-%m-%dT%H:%M:%S%:z')
-    now_stop_str = (now + 10).strftime('%Y-%m-%dT%H:%M:%S%:z')
+    now_str = now.strftime('%Y-%m-%d %H:%M:%S %z')
+    now_stop_str = (now + (10 * 3600 * 24)).strftime('%Y-%m-%d %H:%M:%S %z')
 
     assert_equal [
       'SELECT min(created_at) as k FROM test1',
@@ -52,20 +52,20 @@ class ByTimestampTest < Minitest::Test
   end
 
   def test_with_two_lines_key_start_stop # rubocop:disable Metrics/MethodLength,Metrics/AbcSize,Minitest/MultipleAssertions
-    now = DateTime.now.new_offset(0)
+    now = Time.now
     @helper.src_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50), created_at TIMESTAMP NOT NULL);')
-    @helper.src_sql('INSERT INTO test1 VALUES (1, \'a\', $1), (200, \'b\', $2);', [now, now + 40])
+    @helper.src_sql('INSERT INTO test1 VALUES (1, \'a\', $1), (200, \'b\', $2);', [now, now + (40 * 3600 * 24)])
     @helper.target_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50), created_at TIMESTAMP NOT NULL);')
-    @helper.target_sql('INSERT INTO test1 VALUES (1, \'a\', $1), (200, \'c\', $2);', [now, now + 40])
+    @helper.target_sql('INSERT INTO test1 VALUES (1, \'a\', $1), (200, \'c\', $2);', [now, now + (40 * 3600 * 24)])
 
     refute @helper.run_diff(OPTIONS)
 
     FileUtils.rm_f(LOG_FILE)
 
-    assert @helper.run_diff(OPTIONS + " --key_stop='#{now + 5}'")
+    assert @helper.run_diff(OPTIONS + " --key_stop='#{now + (5 * 3600 * 24)}'")
 
-    now_str = now.strftime('%Y-%m-%dT%H:%M:%S%:z')
-    now_stop_str = (now + 10).strftime('%Y-%m-%dT%H:%M:%S%:z')
+    now_str = now.strftime('%Y-%m-%d %H:%M:%S %z')
+    now_stop_str = (now + (10 * 3600 * 24)).strftime('%Y-%m-%d %H:%M:%S %z')
 
     assert_equal sql_commands, [
       'SELECT min(created_at) as k FROM test1',
@@ -73,10 +73,10 @@ class ByTimestampTest < Minitest::Test
     ]
     FileUtils.rm_f(LOG_FILE)
 
-    assert @helper.run_diff(OPTIONS + " --key_start=#{now + 1} --key_stop='#{now + 5}'")
+    assert @helper.run_diff(OPTIONS + " --key_start='#{now + (1 * 3600 * 24)}' --key_stop='#{now + (5 * 3600 * 24)}'")
 
-    now_str = (now + 1).strftime('%Y-%m-%dT%H:%M:%S%:z')
-    now_stop_str = (now + 11).strftime('%Y-%m-%dT%H:%M:%S%:z')
+    now_str = (now + (1 * 3600 * 24)).strftime('%Y-%m-%d %H:%M:%S %z')
+    now_stop_str = (now + (11 * 3600 * 24)).strftime('%Y-%m-%d %H:%M:%S %z')
 
     assert_equal sql_commands, [
       "select id, name, created_at from test1 WHERE created_at >= '#{now_str}' AND created_at < '#{now_stop_str}' ORDER BY id" # rubocop:disable Layout/LineLength

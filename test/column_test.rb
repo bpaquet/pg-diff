@@ -48,4 +48,21 @@ class ColumnTest < Minitest::Test
 
     refute @helper.run_diff(OPTIONS)
   end
+
+  def test_columns_filtering # rubocop:disable Minitest/MultipleAssertions
+    @helper.src_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50), x text);')
+    @helper.src_sql('INSERT INTO test1 VALUES (1, \'a\', \'a\'), (2, \'b\', \'a\');')
+    @helper.target_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50), x text);')
+    @helper.target_sql('INSERT INTO test1 VALUES (1, \'a\', \'a\'), (2, \'c\', \'a\');')
+
+    refute @helper.run_diff(OPTIONS)
+
+    assert @helper.run_diff("#{OPTIONS} --columns id,x")
+
+    @helper.target_sql('UPDATE test1 SET x = \'y\' WHERE id = 1;')
+
+    refute @helper.run_diff("#{OPTIONS} --columns id,x")
+
+    assert @helper.run_diff("#{OPTIONS} --columns id")
+  end
 end

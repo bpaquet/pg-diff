@@ -83,6 +83,10 @@ OptionParser.new do |opts| # rubocop:disable Metrics/BlockLength
   opts.on('--log_level log_level', 'Log level') do |v|
     options[:log_level] = Logger.const_get(v.upcase)
   end
+  opts.on('--columns columns_list', 'Columns list (comma separated) to use for comparison. ' \
+                                    'If not specified, all columns will be used') do |v|
+    options[:columns] = v.split(',')
+  end
 end.parse!
 
 %i[src target tables].each do |key|
@@ -100,6 +104,7 @@ options[:tables].split(',').each do |table|
   target_table = options[:table_mapping].gsub('<TABLE>', table)
   logger.warn("[#{table}] Preparing table")
   src_columns = psql.columns(table, options[:src])
+  src_columns.select! { |k, _v| options[:columns].include?(k) } if options[:columns]
   key = options[:key]
   raise("[#{table}] Missing key #{key}") unless src_columns[key]
   raise("[#{table}] Key #{key} is nullable") unless src_columns[key] == 'NO'
