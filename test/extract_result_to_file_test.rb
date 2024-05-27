@@ -3,7 +3,7 @@
 require 'minitest/autorun'
 
 require_relative 'helper'
-class ExtratResultToFileTest < Minitest::Test
+class ExtractResultToFileTest < Minitest::Test
   LOG_FILE = '/tmp/diff.log'
   OPTIONS = "--tables test1 --strategy=one_shot --extract_result_to_file #{LOG_FILE}".freeze
 
