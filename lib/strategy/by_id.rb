@@ -55,7 +55,7 @@ module Strategy
       }
     end
 
-    def batches # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+    def batches
       # Precompute key_start and key_stop in parallel
       Parallel.each(%i[key_start key_stop], in_threads: 2) { |method| send(method) }
 

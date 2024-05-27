@@ -46,7 +46,7 @@ class ByIdTest < Minitest::Test
     ], sql_commands.uniq
   end
 
-  def test_with_two_lines_negative_start # rubocop:disable Metrics/MethodLength
+  def test_with_two_lines_negative_start
     @helper.src_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50));')
     @helper.src_sql('INSERT INTO test1 VALUES (-1000, \'a\'), (200, \'b\');')
     @helper.target_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50));')
@@ -62,7 +62,7 @@ class ByIdTest < Minitest::Test
     ], sql_commands.uniq
   end
 
-  def test_with_two_lines_batch_size # rubocop:disable Metrics/MethodLength
+  def test_with_two_lines_batch_size
     @helper.src_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50));')
     @helper.src_sql('INSERT INTO test1 VALUES (1, \'a\'), (200, \'b\');')
     @helper.target_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50));')
@@ -96,7 +96,7 @@ class ByIdTest < Minitest::Test
     ], sql_commands.uniq
   end
 
-  def test_with_two_lines_max # rubocop:disable Metrics/MethodLength
+  def test_with_two_lines_max
     @helper.src_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50));')
     @helper.src_sql('INSERT INTO test1 VALUES (1, \'a\'), (200, \'b\');')
     @helper.target_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50));')
