@@ -159,7 +159,6 @@ Parallel.each( # rubocop:disable Metrics/BlockLength
   count = File.read(wc_file.path).to_i
   Stats.add_lines(count)
 
-  p result
   if result
     logger.info("[#{table}] No error on batch #{batch[:name]}, #{count} lines")
   else
