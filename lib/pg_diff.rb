@@ -127,7 +127,11 @@ options[:tables].split(',').each do |table|
 end
 
 logger.warn("Number of batches: #{to_do.size}, parallelism: #{options[:parallel]}")
-Parallel.each(to_do, in_threads: options[:parallel], progress: 'Diffing ...') do |table, columns, target_table, batch| # rubocop:disable Metrics/BlockLength
+Parallel.each( # rubocop:disable Metrics/BlockLength
+  to_do,
+  in_threads: options[:parallel],
+  progress: $stdout.tty? ? 'Diffing ...' : nil
+) do |table, columns, target_table, batch|
   src_sql = psql.build_copy(
     "select #{columns.join(', ')} from #{table} WHERE #{batch[:where]} ORDER BY #{options[:order_by]}"
   )
