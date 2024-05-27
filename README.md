@@ -1,4 +1,6 @@
-A tool do diff Postgres databases at scale
+A tool do diff Postgres databases at scale.
+
+No diff is performed in ruby. The diff by itself id one through `psql` process piped to the standard UNIX `diff`. Ruby is here only to orchestrate processes.
 
 Full list of options
 
