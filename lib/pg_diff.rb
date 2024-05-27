@@ -88,6 +88,10 @@ OptionParser.new do |opts| # rubocop:disable Metrics/BlockLength
   opts.on('--extract_result_to_file file', 'Extract the result to a file') do |v|
     options[:extract_result_to_file] = v
   end
+
+  opts.on('--limit_to_the_past_minutes minutes', 'Add a where condition like [key] < now - x minutes') do |v|
+    options[:limit_to_the_past_minutes] = v.to_i
+  end
 end.parse!
 
 %i[src target tables].each do |key|
@@ -136,11 +140,15 @@ Parallel.each( # rubocop:disable Metrics/BlockLength
   in_threads: options[:parallel],
   progress: $stdout.tty? ? 'Diffing ...' : nil
 ) do |table, columns, target_table, batch|
+  where = batch[:where]
+  if options[:limit_to_the_past_minutes]
+    where += " AND #{options[:key]} < '#{Time.now - (options[:limit_to_the_past_minutes] * 60)}'"
+  end
   src_sql = psql.build_copy(
-    "select #{columns.join(', ')} from #{table} WHERE #{batch[:where]} ORDER BY #{options[:order_by]}"
+    "select #{columns.join(', ')} from #{table} WHERE #{where} ORDER BY #{options[:order_by]}"
   )
   target_sql = psql.build_copy(
-    "select #{columns.join(', ')} from #{target_table} WHERE #{batch[:where]} ORDER BY #{options[:order_by]}"
+    "select #{columns.join(', ')} from #{target_table} WHERE #{where} ORDER BY #{options[:order_by]}"
   )
   target_sql.close
 
