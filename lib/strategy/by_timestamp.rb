@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require_relative 'by_id'
-require 'time'
+require 'datetime'
 
 module Strategy
   # Diff table by iterating on numerical ids
