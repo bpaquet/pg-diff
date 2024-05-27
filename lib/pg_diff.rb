@@ -5,12 +5,12 @@ require 'logger'
 require 'parallel'
 
 require_relative 'stats'
+require_relative 'extract_result_helper'
 require_relative 'strategy/one_shot'
 require_relative 'strategy/by_id'
 require_relative 'strategy/by_timestamp'
 
 options = {
-  tmp_dir: '/tmp',
   psql: 'psql',
   log_level: Logger::INFO,
   order_by: 'id',
@@ -24,9 +24,6 @@ options = {
 OptionParser.new do |opts| # rubocop:disable Metrics/BlockLength
   opts.banner = 'Usage: pg-diff [options]'
 
-  opts.on('--tmp tmp_dir', 'Sepcify the tmp directory to use') do |v|
-    options[:tmp_dir] = v
-  end
   opts.on('--psql psql_binary', 'psql binary') do |v|
     options[:psql] = v
   end
@@ -87,6 +84,10 @@ OptionParser.new do |opts| # rubocop:disable Metrics/BlockLength
                                     'If not specified, all columns will be used') do |v|
     options[:columns] = v.split(',')
   end
+
+  opts.on('--extract_result_to_file file', 'Extract the result to a file') do |v|
+    options[:extract_result_to_file] = v
+  end
 end.parse!
 
 %i[src target tables].each do |key|
@@ -97,6 +98,8 @@ require_relative 'psql'
 
 logger = Logger.new($stdout)
 logger.level = options[:log_level]
+
+ExtractResultHelper.cleanup(options[:extract_result_to_file])
 
 psql = Psql.new(options)
 to_do = []
@@ -141,37 +144,41 @@ Parallel.each( # rubocop:disable Metrics/BlockLength
   )
   target_sql.close
 
+  diff_file = Tempfile.new("diff_#{table}")
   wc_file = Tempfile.new("wc_#{table}")
   wc_file.close
   command = 'diff --speed-large-file ' \
             "<(psql #{options[:src]} -v ON_ERROR_STOP=on -f #{src_sql.path} | tee >(wc -l > #{wc_file.path})) " \
             "<(psql #{options[:target]} -v ON_ERROR_STOP=on -f #{target_sql.path}) " \
 
-  bash = Tempfile.new("bash_#{table}")
-  bash.write(command)
-  bash.close
+  bash_file = Tempfile.new("bash_#{table}")
+  bash_file.write(command)
+  bash_file.close
 
-  result = system("cat #{bash.path} | bash")
+  result = system("cat #{bash_file.path} | bash > #{diff_file.path} 2>&1")
   count = File.read(wc_file.path).to_i
   Stats.add_lines(count)
-  [src_sql, target_sql, wc_file, bash]
-  File.unlink(src_sql)
-  File.unlink(target_sql)
-  File.unlink(wc_file)
-  File.unlink(bash)
 
   if result
     logger.info("[#{table}] No error on batch #{batch[:name]}, #{count} lines")
   else
+    puts File.read(diff_file.path)
     logger.error("[#{table}] Error on batch #{batch[:name]}, #{count} lines")
     Stats.add_error("[#{table}] Errors on batch: #{batch[:name]}")
+    ExtractResultHelper.process(diff_file.path, options[:extract_result_to_file])
   end
+  [src_sql, target_sql, wc_file, bash_file, diff_file].each(&:unlink)
 end
 
 duration = Time.now.to_f - start
 
+if options[:extract_result_to_file] && File.exist?(options[:extract_result_to_file])
+  logger.warn("Extracted result to #{options[:extract_result_to_file]}")
+end
+
 if Stats.all_errors.any?
-  logger.error("Errors found: #{Stats.all_errors.count}: #{Stats.all_errors.join(', ')}")
+  logger.error("Errors found: #{Stats.all_errors.count}: #{Stats.all_errors.join(', ')}, " \
+               "#{Stats.all_lines} lines compared, duration: #{duration} seconds")
   exit 1
 else
   logger.warn(
