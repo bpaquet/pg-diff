@@ -92,6 +92,11 @@ OptionParser.new do |opts| # rubocop:disable Metrics/BlockLength
   opts.on('--limit_to_the_past_minutes minutes', 'Add a where condition like [key] < now - x minutes') do |v|
     options[:limit_to_the_past_minutes] = v.to_i
   end
+
+  opts.on('--limit_to_the_past_key key', 'Key to use with limit_to_the_past_minutes. ' \
+                                         'Default is the key from --key') do |v|
+    options[:limit_to_the_past_key] = v
+  end
 end.parse!
 
 %i[src target tables].each do |key|
@@ -142,7 +147,8 @@ Parallel.each( # rubocop:disable Metrics/BlockLength
 ) do |table, columns, target_table, batch|
   where = batch[:where]
   if options[:limit_to_the_past_minutes]
-    where += " AND #{options[:key]} < '#{Time.now - (options[:limit_to_the_past_minutes] * 60)}'"
+    where_key = options[:limit_to_the_past_key] || options[:key]
+    where += " AND #{where_key} < '#{Time.now - (options[:limit_to_the_past_minutes] * 60)}'"
   end
   src_sql = psql.build_copy(
     "select #{columns.join(', ')} from #{table} WHERE #{where} ORDER BY #{options[:order_by]}"
