@@ -99,13 +99,13 @@ to_do = []
 options[:tables].split(',').each do |table|
   target_table = options[:table_mapping].gsub('<TABLE>', table)
   logger.warn("[#{table}] Preparing table")
-  src_columns = psql.columns(table, 'src', options[:src])
+  src_columns = psql.columns(table, options[:src])
   key = options[:key]
   raise("[#{table}] Missing key #{key}") unless src_columns[key]
   raise("[#{table}] Key #{key} is nullable") unless src_columns[key] == 'NO'
 
   src_columns = src_columns.keys
-  target_columns = psql.columns(target_table, 'target', options[:target]).keys
+  target_columns = psql.columns(target_table, options[:target]).keys
 
   if src_columns & target_columns != src_columns
     raise("[#{table}] Missing columns in target table #{target_table}: #{src_columns - target_columns}")
@@ -122,16 +122,17 @@ options[:tables].split(',').each do |table|
 end
 
 logger.warn("Number of batches: #{to_do.size}, parallelism: #{options[:parallel]}")
-Parallel.each(to_do, in_threads: options[:parallel], progress: 'Diffing ...') do |table, columns, target_table, batch|
-  src_sql = Tempfile.new("src_#{table}")
-  src_sql.write("COPY ( select #{columns.join(', ')} from #{table} WHERE #{batch[:where]} ORDER BY #{options[:order_by]}) TO STDOUT;")
-  src_sql.close
-
-  target_sql = Tempfile.new("src_#{table}")
-  target_sql.write("COPY ( select #{columns.join(', ')} from #{target_table} WHERE #{batch[:where]} ORDER BY #{options[:order_by]}) TO STDOUT;")
+Parallel.each(to_do, in_threads: options[:parallel], progress: 'Diffing ...') do |table, columns, target_table, batch| # rubocop:disable Metrics/BlockLength
+  src_sql = psql.build_copy(
+    "select #{columns.join(', ')} from #{table} WHERE #{batch[:where]} ORDER BY #{options[:order_by]}"
+  )
+  target_sql = psql.build_copy(
+    "select #{columns.join(', ')} from #{target_table} WHERE #{batch[:where]} ORDER BY #{options[:order_by]}"
+  )
   target_sql.close
 
   wc_file = Tempfile.new("wc_#{table}")
+  wc_file.close
   command = 'diff --speed-large-file ' \
             "<(psql #{options[:src]} -v ON_ERROR_STOP=on -f #{src_sql.path} | tee >(wc -l > #{wc_file.path})) " \
             "<(psql #{options[:target]} -v ON_ERROR_STOP=on -f #{target_sql.path}) " \
@@ -139,9 +140,11 @@ Parallel.each(to_do, in_threads: options[:parallel], progress: 'Diffing ...') do
   bash = Tempfile.new("bash_#{table}")
   bash.write(command)
   bash.close
+
   result = system("cat #{bash.path} | bash")
   count = File.read(wc_file.path).to_i
   Stats.add_lines(count)
+  [src_sql, target_sql, wc_file, bash]
   File.unlink(src_sql)
   File.unlink(target_sql)
   File.unlink(wc_file)

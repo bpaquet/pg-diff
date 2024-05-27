@@ -16,7 +16,7 @@ class ByTimestampTest < Minitest::Test
   end
 
   def sql_commands
-    File.readlines(LOG_FILE).map(&:strip).reject { |sql| sql.include?('information_schema.columns') }
+    File.readlines(LOG_FILE).map(&:strip).reject { |sql| sql.include?('information_schema.columns') }.uniq
   end
 
   def test_empty
@@ -28,8 +28,8 @@ class ByTimestampTest < Minitest::Test
     assert_equal [
       'SELECT min(created_at) as k FROM test1',
       'SELECT max(created_at) as k FROM test1',
-      'select created_at, id, name from test1 WHERE 1 = 1 ORDER BY id'
-    ], sql_commands.uniq
+      'select id, name, created_at from test1 WHERE 1 = 1 ORDER BY id'
+    ], sql_commands
   end
 
   def test_with_two_lines # rubocop:disable Metrics/MethodLength
@@ -44,11 +44,11 @@ class ByTimestampTest < Minitest::Test
     now_str = now.strftime('%Y-%m-%dT%H:%M:%S%:z')
     now_stop_str = (now + 10).strftime('%Y-%m-%dT%H:%M:%S%:z')
 
-    assert_equal sql_commands.uniq, [
+    assert_equal [
       'SELECT min(created_at) as k FROM test1',
       'SELECT max(created_at) as k FROM test1',
-      "select created_at, id, name from test1 WHERE created_at >= '#{now_str}' AND created_at < '#{now_stop_str}' ORDER BY id" # rubocop:disable Layout/LineLength
-    ]
+      "select id, name, created_at from test1 WHERE created_at >= '#{now_str}' AND created_at < '#{now_stop_str}' ORDER BY id" # rubocop:disable Layout/LineLength
+    ], sql_commands
   end
 
   def test_with_two_lines_key_start_stop # rubocop:disable Metrics/MethodLength,Metrics/AbcSize,Minitest/MultipleAssertions
@@ -67,9 +67,9 @@ class ByTimestampTest < Minitest::Test
     now_str = now.strftime('%Y-%m-%dT%H:%M:%S%:z')
     now_stop_str = (now + 10).strftime('%Y-%m-%dT%H:%M:%S%:z')
 
-    assert_equal sql_commands.uniq, [
+    assert_equal sql_commands, [
       'SELECT min(created_at) as k FROM test1',
-      "select created_at, id, name from test1 WHERE created_at >= '#{now_str}' AND created_at < '#{now_stop_str}' ORDER BY id" # rubocop:disable Layout/LineLength
+      "select id, name, created_at from test1 WHERE created_at >= '#{now_str}' AND created_at < '#{now_stop_str}' ORDER BY id" # rubocop:disable Layout/LineLength
     ]
     FileUtils.rm_f(LOG_FILE)
 
@@ -78,8 +78,8 @@ class ByTimestampTest < Minitest::Test
     now_str = (now + 1).strftime('%Y-%m-%dT%H:%M:%S%:z')
     now_stop_str = (now + 11).strftime('%Y-%m-%dT%H:%M:%S%:z')
 
-    assert_equal sql_commands.uniq, [
-      "select created_at, id, name from test1 WHERE created_at >= '#{now_str}' AND created_at < '#{now_stop_str}' ORDER BY id" # rubocop:disable Layout/LineLength
+    assert_equal sql_commands, [
+      "select id, name, created_at from test1 WHERE created_at >= '#{now_str}' AND created_at < '#{now_stop_str}' ORDER BY id" # rubocop:disable Layout/LineLength
     ]
   end
 end

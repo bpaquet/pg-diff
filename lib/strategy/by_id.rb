@@ -5,21 +5,19 @@ require_relative 'base'
 module Strategy
   # Diff table by iterating on numerical ids
   class ById < Base
-    def _compute_key(suffix, operation, db, table)
-      file = @options[:tmp_dir] + "/#{@table}_src_#{suffix}"
-      @psql.run_copy("SELECT #{operation}(#{@options[:key]}) as k FROM #{table}", file, db)
-      result = str_to_key(File.read(file).strip)
-      File.unlink(file)
-      result
+    def _compute_key(operation, db, table)
+      file = @psql.build_copy("SELECT #{operation}(#{@options[:key]}) as k FROM #{table}")
+      result = @psql.run_psql_file(file, db).strip
+      str_to_key(result)
     end
 
-    def compute_key(suffix, operation)
+    def compute_key(operation)
       logger.info("[#{@table}] Computing #{operation} for key: #{@options[:key]}")
       Parallel.map([
-                     ["#{suffix}_src", operation, @options[:src], @table],
-                     ["#{suffix}_target", operation, @options[:target], @target_table]
-                   ], in_threads: 2) do |local_suffix, local_operation, db, table|
-        _compute_key(local_suffix, local_operation, db, table)
+                     [operation, @options[:src], @table],
+                     [operation, @options[:target], @target_table]
+                   ], in_threads: 2) do |local_operation, db, table|
+        _compute_key(local_operation, db, table)
       end.send(operation.to_sym)
     end
 
@@ -28,11 +26,11 @@ module Strategy
     end
 
     def key_start
-      @key_start ||= str_to_key(@options[:key_start]) || compute_key('start', 'min')
+      @key_start ||= str_to_key(@options[:key_start]) || compute_key('min')
     end
 
     def key_stop
-      @key_stop ||= str_to_key(@options[:key_stop]) || compute_key('stop', 'max')
+      @key_stop ||= str_to_key(@options[:key_stop]) || compute_key('max')
     end
 
     def key_to_pg(key)
@@ -58,7 +56,7 @@ module Strategy
     end
 
     def batches # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
-      # Precompute key_start and key_stop
+      # Precompute key_start and key_stop in parallel
       Parallel.each(%i[key_start key_stop], in_threads: 2) { |method| send(method) }
 
       logger.info("[#{@table}] Key range: #{key_start} - #{key_stop}")
