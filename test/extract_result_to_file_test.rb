@@ -34,27 +34,27 @@ class ExtractResultToFileTest < Minitest::Test
     refute_path_exists LOG_FILE
   end
 
-  def test_with_two_lines_and_diff # rubocop:disable Metrics/AbcSize,Metrics/MethodLength,Minitest/MultipleAssertions
+  def test_with_two_lines_and_diff # rubocop:disable Minitest/MultipleAssertions
     @helper.src_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50));')
     @helper.src_sql('INSERT INTO test1 VALUES (1, \'a\'), (2, \'b\');')
     @helper.target_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50));')
 
     refute @helper.run_diff(OPTIONS)
 
-    assert_equal ['Only in source: 1', 'Only in source: 2'], File.readlines(LOG_FILE).map(&:strip)
+    assert_equal ['only_in_source: 1', 'only_in_source: 2'], File.readlines(LOG_FILE).map(&:strip)
 
     @helper.target_sql('INSERT INTO test1 VALUES (1, \'a\');')
 
     refute @helper.run_diff(OPTIONS)
 
-    assert_equal ['Only in source: 2'], File.readlines(LOG_FILE).map(&:strip)
+    assert_equal ['only_in_source: 2'], File.readlines(LOG_FILE).map(&:strip)
 
     @helper.target_sql('INSERT INTO test1 VALUES (2, \'b\');')
     @helper.target_sql('INSERT INTO test1 VALUES (3, \'c\');')
 
     refute @helper.run_diff(OPTIONS)
 
-    assert_equal ['Only in destination: 3'], File.readlines(LOG_FILE).map(&:strip)
+    assert_equal ['only_in_target: 3'], File.readlines(LOG_FILE).map(&:strip)
 
     @helper.src_sql('INSERT INTO test1 VALUES (3, \'c\');')
 
@@ -66,6 +66,6 @@ class ExtractResultToFileTest < Minitest::Test
 
     refute @helper.run_diff(OPTIONS)
 
-    assert_equal ['Changed: 3', 'Only in destination: 4'], File.readlines(LOG_FILE).map(&:strip)
+    assert_equal ['changed: 3', 'only_in_target: 4'], File.readlines(LOG_FILE).map(&:strip)
   end
 end

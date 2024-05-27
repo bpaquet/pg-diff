@@ -4,3 +4,7 @@ require:
 
 AllCops:
   NewCops: enable
+Metrics/AbcSize:
+  Enabled: false
+Metrics/MethodLength:
+  Max: 40

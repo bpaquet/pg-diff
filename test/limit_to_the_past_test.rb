@@ -18,7 +18,7 @@ class LimitToThePastTest < Minitest::Test
     File.readlines(LOG_FILE).map(&:strip).reject { |sql| sql.include?('information_schema.columns') }.uniq
   end
 
-  def test_limit_works # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+  def test_limit_works
     now = Time.now
     @helper.src_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50), created_at TIMESTAMP NOT NULL);')
     @helper.src_sql('INSERT INTO test1 VALUES (1, \'a\', $1), (200, \'b\', $2);', [now - (60 * 60), now - (2 * 60)])
