@@ -100,6 +100,7 @@ logger.level = options[:log_level]
 
 psql = Psql.new(options)
 to_do = []
+start = Time.now.to_f
 options[:tables].split(',').each do |table|
   target_table = options[:table_mapping].gsub('<TABLE>', table)
   logger.warn("[#{table}] Preparing table")
@@ -119,7 +120,7 @@ options[:tables].split(',').each do |table|
   strategy_klass = "Strategy::#{options[:strategy].split('_').map(&:capitalize).join}"
   batches = Object.const_get(strategy_klass).new(options, psql, table, target_table).batches
   logger.info("[#{table}] Comparing with #{batches.size} batches, strategy: #{options[:strategy]}")
-  logger.info("[#{table}] key: #{key}, columns: #{src_columns.join(', ')}")
+  logger.info("[#{table}] Key: #{key}, columns: #{src_columns.join(', ')}")
   if src_columns != target_columns
     logger.warn("[#{table}] Different columns in target table #{target_table}: #{target_columns - src_columns}")
   end
@@ -167,9 +168,13 @@ Parallel.each( # rubocop:disable Metrics/BlockLength
   end
 end
 
+duration = Time.now.to_f - start
+
 if Stats.all_errors.any?
   logger.error("Errors found: #{Stats.all_errors.count}: #{Stats.all_errors.join(', ')}")
   exit 1
 else
-  logger.warn("No error found in #{to_do.size} batches, #{Stats.all_lines} lines compared")
+  logger.warn(
+    "No error found in #{to_do.size} batches, #{Stats.all_lines} lines compared, duration: #{duration} seconds"
+  )
 end
