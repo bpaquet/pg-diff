@@ -7,6 +7,7 @@ require 'parallel'
 require_relative 'stats'
 require_relative 'strategy/one_shot'
 require_relative 'strategy/by_id'
+require_relative 'strategy/by_timestamp'
 
 options = {
   tmp_dir: '/tmp',
@@ -74,12 +75,17 @@ OptionParser.new do |opts| # rubocop:disable Metrics/BlockLength
     options[:key_stop] = v
   end
 
-  opts.on('--batch_size size', 'Number of lines in each batch') do |v|
-    options[:batch_size] = v.to_i
+  opts.on('--batch_size size', 'With by_id strategy, number of lines in each batch. ' \
+                               'With by_timestamp strategy, number of days in each batch.') do |v|
+    options[:batch_size] = v
   end
 
   opts.on('--log_level log_level', 'Log level') do |v|
     options[:log_level] = Logger.const_get(v.upcase)
+  end
+  opts.on('--columns columns_list', 'Columns list (comma separated) to use for comparison. ' \
+                                    'If not specified, all columns will be used') do |v|
+    options[:columns] = v.split(',')
   end
 end.parse!
 
@@ -96,36 +102,64 @@ psql = Psql.new(options)
 to_do = []
 options[:tables].split(',').each do |table|
   target_table = options[:table_mapping].gsub('<TABLE>', table)
-  logger.info("Preparing table #{table}")
+  logger.warn("[#{table}] Preparing table")
+  src_columns = psql.columns(table, options[:src])
+  src_columns.select! { |k, _v| options[:columns].include?(k) } if options[:columns]
+  key = options[:key]
+  raise("[#{table}] Missing key #{key}") unless src_columns[key]
+  raise("[#{table}] Key #{key} is nullable") unless src_columns[key] == 'NO'
+
+  src_columns = src_columns.keys
+  target_columns = psql.columns(target_table, options[:target]).keys
+
+  if src_columns & target_columns != src_columns
+    raise("[#{table}] Missing columns in target table #{target_table}: #{src_columns - target_columns}")
+  end
+
   strategy_klass = "Strategy::#{options[:strategy].split('_').map(&:capitalize).join}"
   batches = Object.const_get(strategy_klass).new(options, psql, table, target_table).batches
-  logger.info("Comparing table #{table} with #{batches.size} batches, strategy: #{options[:strategy]}")
-  to_do += batches.map { |batch| [table, target_table, batch] }
+  logger.info("[#{table}] Comparing with #{batches.size} batches, strategy: #{options[:strategy]}")
+  logger.info("[#{table}] key: #{key}, columns: #{src_columns.join(', ')}")
+  if src_columns != target_columns
+    logger.warn("[#{table}] Different columns in target table #{target_table}: #{target_columns - src_columns}")
+  end
+  to_do += batches.map { |batch| [table, src_columns, target_table, batch] }
 end
 
-logger.warn("Number of batches: #{to_do.size}")
-Parallel.each(to_do, in_threads: options[:parallel], progress: 'Diffing ...') do |table, target_table, batch|
-  src_file = "#{options[:tmp_dir]}/pg_diff_src_#{table}_#{batch[:name]}"
-  target_file = "#{options[:tmp_dir]}/pg_diff_target_#{target_table}_#{batch[:name]}"
-  Parallel.each(
-    [
-      [src_file, table, options[:src]],
-      [target_file, target_table, options[:target]]
-    ], in_threads: 2
-  ) do |file, real_table, db|
-    psql.run_copy("select * from #{real_table} WHERE #{batch[:where]} ORDER BY #{options[:order_by]}", file, db)
-  end
-  result = system("diff -du #{src_file} #{target_file}")
-  count = `wc -l #{src_file}`.to_i
+logger.warn("Number of batches: #{to_do.size}, parallelism: #{options[:parallel]}")
+Parallel.each(to_do, in_threads: options[:parallel], progress: 'Diffing ...') do |table, columns, target_table, batch| # rubocop:disable Metrics/BlockLength
+  src_sql = psql.build_copy(
+    "select #{columns.join(', ')} from #{table} WHERE #{batch[:where]} ORDER BY #{options[:order_by]}"
+  )
+  target_sql = psql.build_copy(
+    "select #{columns.join(', ')} from #{target_table} WHERE #{batch[:where]} ORDER BY #{options[:order_by]}"
+  )
+  target_sql.close
+
+  wc_file = Tempfile.new("wc_#{table}")
+  wc_file.close
+  command = 'diff --speed-large-file ' \
+            "<(psql #{options[:src]} -v ON_ERROR_STOP=on -f #{src_sql.path} | tee >(wc -l > #{wc_file.path})) " \
+            "<(psql #{options[:target]} -v ON_ERROR_STOP=on -f #{target_sql.path}) " \
+
+  bash = Tempfile.new("bash_#{table}")
+  bash.write(command)
+  bash.close
+
+  result = system("cat #{bash.path} | bash")
+  count = File.read(wc_file.path).to_i
   Stats.add_lines(count)
-  size = File.size(src_file)
-  File.unlink(src_file)
-  File.unlink(target_file)
+  [src_sql, target_sql, wc_file, bash]
+  File.unlink(src_sql)
+  File.unlink(target_sql)
+  File.unlink(wc_file)
+  File.unlink(bash)
+
   if result
-    logger.info("No error on batch #{batch[:name]}, file size: #{size}, #{count} lines")
+    logger.info("[#{table}] No error on batch #{batch[:name]}, #{count} lines")
   else
-    logger.error("Error on batch #{batch[:name]} file size: #{size}, #{count} lines")
-    Stats.add_error("Errors on batch: #{batch[:name]}")
+    logger.error("[#{table}] Error on batch #{batch[:name]}, #{count} lines")
+    Stats.add_error("[#{table}] Errors on batch: #{batch[:name]}")
   end
 end
 

@@ -3,45 +3,69 @@
 require_relative 'base'
 
 module Strategy
-  # Diff table by iterating on ids
+  # Diff table by iterating on numerical ids
   class ById < Base
-    def _compute_key(suffix, operation, db, table)
-      file = @options[:tmp_dir] + "/#{@table}_src_#{suffix}"
-      @psql.run_copy("SELECT #{operation}(#{@options[:key]}) as k FROM #{table}", file, db)
-      result = File.read(file).strip.to_i
-      File.unlink(file)
-      result
+    def _compute_key(operation, db, table)
+      file = @psql.build_copy("SELECT #{operation}(#{@options[:key]}) as k FROM #{table}")
+      result = @psql.run_psql_file(file, db).strip
+      str_to_key(result)
     end
 
-    def compute_key(suffix, operation)
-      logger.info("Computing #{operation} key for #{@table}, key: #{@options[:key]}")
-      [
-        _compute_key("#{suffix}_src", operation, @options[:src], @table),
-        _compute_key("#{suffix}_target", operation, @options[:target], @target_table)
-      ].send(operation.to_sym)
+    def compute_key(operation)
+      logger.info("[#{@table}] Computing #{operation} for key: #{@options[:key]}")
+      Parallel.map([
+                     [operation, @options[:src], @table],
+                     [operation, @options[:target], @target_table]
+                   ], in_threads: 2) do |local_operation, db, table|
+        _compute_key(local_operation, db, table)
+      end.send(operation.to_sym)
+    end
+
+    def str_to_key(str)
+      str&.to_i
     end
 
     def key_start
-      @key_start ||= @options[:key_start]&.to_i || compute_key('start', 'min')
+      @key_start ||= str_to_key(@options[:key_start]) || compute_key('min')
     end
 
     def key_stop
-      @key_stop ||= @options[:key_stop]&.to_i || (compute_key('stop', 'max') + 1)
+      @key_stop ||= str_to_key(@options[:key_stop]) || compute_key('max')
+    end
+
+    def key_to_pg(key)
+      key
     end
 
     def build_batch(current, next_current)
       {
         name: "#{@table}_#{current}",
-        where: "#{@options[:key]} >= #{current} AND #{@options[:key]} < #{next_current}"
+        where: "#{@options[:key]} >= #{key_to_pg(current)} AND #{@options[:key]} < #{key_to_pg(next_current)}"
       }
     end
 
-    def batches
-      logger.info("Key range: #{key_start} - #{key_stop}")
+    def build_next_key(current, increment)
+      current + increment.to_i
+    end
+
+    def empty_batch
+      {
+        name: "empty_#{@table}",
+        where: '1 = 1'
+      }
+    end
+
+    def batches # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+      # Precompute key_start and key_stop in parallel
+      Parallel.each(%i[key_start key_stop], in_threads: 2) { |method| send(method) }
+
+      logger.info("[#{@table}] Key range: #{key_start} - #{key_stop}")
       result = []
+      return [empty_batch] if key_start.nil? || key_stop.nil?
+
       current = key_start
-      while current < key_stop
-        next_current = current + @options[:batch_size]
+      while current < build_next_key(key_stop, 1)
+        next_current = build_next_key(current, @options[:batch_size])
         result << build_batch(current, next_current)
         current = next_current
       end

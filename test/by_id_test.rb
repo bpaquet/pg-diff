@@ -3,7 +3,7 @@
 require 'minitest/autorun'
 
 require_relative 'helper'
-class IdTest < Minitest::Test
+class ByIdTest < Minitest::Test
   LOG_FILE = '/tmp/sql.log'
   OPTIONS = "--tables test1 --strategy=by_id --record_sql_file #{LOG_FILE}".freeze
 
@@ -15,7 +15,7 @@ class IdTest < Minitest::Test
   end
 
   def sql_commands
-    File.readlines(LOG_FILE).map(&:strip)
+    File.readlines(LOG_FILE).map(&:strip).reject { |sql| sql.include?('information_schema.columns') }
   end
 
   def test_empty
@@ -27,7 +27,7 @@ class IdTest < Minitest::Test
     assert_equal [
       'SELECT min(id) as k FROM test1',
       'SELECT max(id) as k FROM test1',
-      'select * from test1 WHERE id >= 0 AND id < 1000 ORDER BY id'
+      'select id, name from test1 WHERE id >= 0 AND id < 1000 ORDER BY id'
     ], sql_commands.uniq
   end
 
@@ -42,7 +42,7 @@ class IdTest < Minitest::Test
     assert_equal [
       'SELECT min(id) as k FROM test1',
       'SELECT max(id) as k FROM test1',
-      'select * from test1 WHERE id >= 1 AND id < 1001 ORDER BY id'
+      'select id, name from test1 WHERE id >= 1 AND id < 1001 ORDER BY id'
     ], sql_commands.uniq
   end
 
@@ -57,8 +57,8 @@ class IdTest < Minitest::Test
     assert_equal [
       'SELECT min(id) as k FROM test1',
       'SELECT max(id) as k FROM test1',
-      'select * from test1 WHERE id >= -1000 AND id < 0 ORDER BY id',
-      'select * from test1 WHERE id >= 0 AND id < 1000 ORDER BY id'
+      'select id, name from test1 WHERE id >= -1000 AND id < 0 ORDER BY id',
+      'select id, name from test1 WHERE id >= 0 AND id < 1000 ORDER BY id'
     ], sql_commands.uniq
   end
 
@@ -73,9 +73,9 @@ class IdTest < Minitest::Test
     assert_equal [
       'SELECT min(id) as k FROM test1',
       'SELECT max(id) as k FROM test1',
-      'select * from test1 WHERE id >= 1 AND id < 71 ORDER BY id',
-      'select * from test1 WHERE id >= 71 AND id < 141 ORDER BY id',
-      'select * from test1 WHERE id >= 141 AND id < 211 ORDER BY id'
+      'select id, name from test1 WHERE id >= 1 AND id < 71 ORDER BY id',
+      'select id, name from test1 WHERE id >= 71 AND id < 141 ORDER BY id',
+      'select id, name from test1 WHERE id >= 141 AND id < 211 ORDER BY id'
     ], sql_commands.uniq
   end
 
@@ -92,7 +92,7 @@ class IdTest < Minitest::Test
     assert @helper.run_diff("#{OPTIONS} --key_start=-50 --key_stop=20 --batch_size=100", display_output: false)
 
     assert_equal [
-      'select * from test1 WHERE id >= -50 AND id < 50 ORDER BY id'
+      'select id, name from test1 WHERE id >= -50 AND id < 50 ORDER BY id'
     ], sql_commands.uniq
   end
 
@@ -107,8 +107,8 @@ class IdTest < Minitest::Test
     assert_equal [
       'SELECT min(id) as k FROM test1',
       'SELECT max(id) as k FROM test1',
-      'select * from test1 WHERE id >= 1 AND id < 1001 ORDER BY id',
-      'select * from test1 WHERE id >= 1001 AND id < 2001 ORDER BY id'
+      'select id, name from test1 WHERE id >= 1 AND id < 1001 ORDER BY id',
+      'select id, name from test1 WHERE id >= 1001 AND id < 2001 ORDER BY id'
     ], sql_commands.uniq
   end
 
@@ -123,7 +123,7 @@ class IdTest < Minitest::Test
     assert_equal [
       'SELECT min(id) as k FROM test1',
       'SELECT max(id) as k FROM test1',
-      'select * from test1 WHERE id >= -200 AND id < 800 ORDER BY id'
+      'select id, name from test1 WHERE id >= -200 AND id < 800 ORDER BY id'
     ], sql_commands.uniq
   end
 end

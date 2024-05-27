@@ -15,12 +15,11 @@ class OneShotTest < Minitest::Test
   end
 
   def sql_commands
-    File.readlines(LOG_FILE).map(&:strip)
+    File.readlines(LOG_FILE).map(&:strip).reject { |sql| sql.include?('information_schema.columns') }.uniq
   end
 
   EXPECTED_SQL = [
-    'select * from test1 WHERE 1 = 1 ORDER BY id',
-    'select * from test1 WHERE 1 = 1 ORDER BY id'
+    'select id, name from test1 WHERE 1 = 1 ORDER BY id'
   ].freeze
 
   def test_empty
@@ -29,7 +28,7 @@ class OneShotTest < Minitest::Test
 
     assert @helper.run_diff(OPTIONS)
 
-    assert_equal sql_commands, EXPECTED_SQL
+    assert_equal EXPECTED_SQL, sql_commands
   end
 
   def test_with_two_lines
@@ -40,7 +39,7 @@ class OneShotTest < Minitest::Test
 
     assert @helper.run_diff(OPTIONS)
 
-    assert_equal sql_commands, EXPECTED_SQL
+    assert_equal EXPECTED_SQL, sql_commands
   end
 
   def test_with_two_lines_no_debug
