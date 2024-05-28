@@ -57,12 +57,7 @@ class TableComparer
   end
 
   def where(batch)
-    where_clause = batch[:where]
-    if options[:limit_to_the_past_minutes]
-      where_key = options[:limit_to_the_past_key] || options[:key]
-      where_clause += " AND #{where_key} < '#{Time.now - (options[:limit_to_the_past_minutes] * 60)}'"
-    end
-    where_clause
+    batch[:where] + (options[:where_clause] || '')
   end
 
   def copy(batch, source_table)

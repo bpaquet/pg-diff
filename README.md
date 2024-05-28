@@ -33,6 +33,8 @@ only_in_source: 14
 only_in_target: 15
 ```
 
+The number is the first item of each row, which is the primary key is most of tables.
+
 ## Run it in docker
 
     docker build . -t foo && docker run --rm -ti -v $HOME/.pgpass:/root/.pgpass foo /pg-diff <list of options>

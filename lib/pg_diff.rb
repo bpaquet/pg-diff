@@ -114,6 +114,12 @@ require_relative 'psql'
 logger = Logger.new($stdout)
 logger.level = options[:log_level]
 
+if options[:limit_to_the_past_minutes]
+  where_key = options[:limit_to_the_past_key] || options[:key]
+  options[:where_clause] = " AND #{where_key} < '#{Time.now - (options[:limit_to_the_past_minutes] * 60)}'"
+  logger.info("Adding where clause: #{options[:where_clause][5..]}")
+end
+
 psql = Psql.new(options)
 to_do = []
 start = Time.now.to_f
