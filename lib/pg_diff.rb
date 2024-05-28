@@ -105,7 +105,8 @@ OptionParser.new do |opts| # rubocop:disable Metrics/BlockLength
   end
 
   opts.on('--custom_select custom_select', 'Instead of doing a full diff, use a custom select. ' \
-                                           'For example, count(*) can be used to compare append only table.') do |v|
+                                           'For example, count(*) can be used to compare append only table. ' \
+                                           'The order clause is omitted in that case.') do |v|
     options[:custom_select] = v
   end
 end.parse!

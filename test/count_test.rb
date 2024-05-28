@@ -22,6 +22,7 @@ class CountTest < Minitest::Test
     @helper.src_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50));')
     @helper.src_sql('INSERT INTO test1 VALUES (1, \'a\'), (2, \'b\');')
     @helper.target_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50));')
+    @helper.target_sql('INSERT INTO test1 VALUES (1, \'a\'), (2, \'c\');')
 
     refute @helper.run_diff(OPTIONS)
 
@@ -30,6 +31,6 @@ class CountTest < Minitest::Test
     FileUtils.rm_f(LOG_FILE)
 
     assert @helper.run_diff("#{OPTIONS} --custom_select='count(*)'")
-    assert_equal ['select count(*) from test1 WHERE 1 = 1 ORDER BY id'], sql_commands
+    assert_equal ['select count(*) from test1 WHERE 1 = 1'], sql_commands
   end
 end
