@@ -103,6 +103,11 @@ OptionParser.new do |opts| # rubocop:disable Metrics/BlockLength
                                          'Default is the key from --key') do |v|
     options[:limit_to_the_past_key] = v
   end
+
+  opts.on('--custom_select custom_select', 'Instead of doing a full diff, use a custom select. ' \
+                                           'For example, count(*) can be used to compare append only table.') do |v|
+    options[:custom_select] = v
+  end
 end.parse!
 
 %i[src target tables].each do |key|
@@ -120,6 +125,8 @@ if options[:limit_to_the_past_minutes]
   logger.info("Adding where clause: #{options[:where_clause][5..]}")
 end
 
+logger.info("Using custom select: #{options[:custom_select]}") if options[:custom_select]
+
 psql = Psql.new(options)
 to_do = []
 start = Time.now.to_f
@@ -129,7 +136,7 @@ options[:tables].split(',').map do |table|
   to_do += handler.compute_batches
 end
 
-logger.warn("Number of batches: #{to_do.size}, parallelism: #{options[:parallel]}")
+logger.warn("Number of batches: #{to_do.size}, parallelism: #{options[:parallel]}, mode: #{options[:mode]}")
 Parallel.each(
   to_do,
   in_threads: options[:parallel],

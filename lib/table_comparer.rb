@@ -61,8 +61,10 @@ class TableComparer
   end
 
   def copy(batch, source_table)
+    select = options[:custom_select] || columns.join(', ')
+
     psql.build_copy(
-      "select #{columns.join(', ')} from #{source_table} WHERE #{where(batch)} ORDER BY #{options[:order_by]}"
+      "select #{select} from #{source_table} WHERE #{where(batch)} ORDER BY #{options[:order_by]}"
     )
   end
 

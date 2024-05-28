@@ -35,6 +35,12 @@ only_in_target: 15
 
 The number is the first item of each row, which is the primary key is most of tables.
 
+## Use custom_select
+
+`pg-diff` generate by default queries like `select a, b, c from ....`.
+
+You can use `--custom_select='count(*)'` to generate `select count(*) from ...`. This can be really useful for append only table.
+
 ## Run it in docker
 
     docker build . -t foo && docker run --rm -ti -v $HOME/.pgpass:/root/.pgpass foo /pg-diff <list of options>
