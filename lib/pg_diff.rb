@@ -137,7 +137,7 @@ options[:tables].split(',').map do |table|
   to_do += handler.compute_batches
 end
 
-logger.warn("Number of batches: #{to_do.size}, parallelism: #{options[:parallel]}, mode: #{options[:mode]}")
+logger.warn("Number of batches: #{to_do.size}, parallelism: #{options[:parallel]}")
 Parallel.each(
   to_do,
   in_threads: options[:parallel],

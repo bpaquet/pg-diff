@@ -41,7 +41,7 @@ class TableComparer
       raise("[#{table}] Missing columns in target table #{target_table}: #{columns - target_columns}")
     end
 
-    return unless columns != target_columns
+    return unless (target_columns - columns) != []
 
     logger.warn("[#{table}] Different columns in target table #{target_table}: #{target_columns - columns}")
   end
