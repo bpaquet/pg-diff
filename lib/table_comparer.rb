@@ -27,12 +27,13 @@ class TableComparer
     logger.warn("[#{table}] Configuring columns")
 
     src_columns = @psql.columns(@table, @options[:src])
-    src_columns.select! { |k, _v| options[:columns].include?(k) } if options[:columns]
-
     logger.debug("Source columns: #{src_columns}")
+
     @key = options[:key]
     raise("[#{table}] Missing key #{key}") unless src_columns[key]
     raise("[#{table}] Key #{key} is nullable") unless src_columns[key] == 'NO'
+
+    src_columns.select! { |k, _v| options[:columns].include?(k) } if options[:columns]
 
     @columns = src_columns.keys
     target_columns = psql.columns(target_table, options[:target]).keys
