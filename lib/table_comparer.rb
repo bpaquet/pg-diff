@@ -54,7 +54,7 @@ class TableComparer
     strategy_klass = "Strategy::#{options[:strategy].split('_').map(&:capitalize).join}"
     batches = Object.const_get(strategy_klass).new(options, psql, table, target_table).batches
     logger.info("[#{table}] Comparing with #{batches.size} batches, strategy: #{options[:strategy]}")
-    logger.info("[#{table}] Key: #{key}, columns: #{columns.join(', ')}")
+    logger.info("[#{table}] Key: #{key}, columns: #{@columns.join(', ')}")
     batches.map { |batch| [self, batch] }
   end
 
