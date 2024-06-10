@@ -43,7 +43,7 @@ class TableComparer
     @target_columns.select! { |k, _v| options[:target_columns].include?(k) } if options[:target_columns]
     logger.debug("Target columns: #{@target_columns}")
 
-    if columns.size != target_columns.size
+    if @columns.size != @target_columns.size
       raise("[#{table}] Different number of columns in target table #{target_table}: #{columns.size} != #{target_columns.size}")
     end
   end
