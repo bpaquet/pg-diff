@@ -77,7 +77,7 @@ class TableComparer
 
   def process_batch(batch)
     src_sql_file = copy(batch, table, @columns.join(', '), options[:order_by])
-    target_sql_file = copy(batch, target_table, @target_columns.join(', '), options[:target_order_by])
+    target_sql_file = copy(batch, target_table, @target_columns.join(', '), options[:target_order_by] ||  options[:order_by])
 
     diff_file = Tempfile.new("diff_#{table}")
     wc_file = Tempfile.new("wc_#{table}")
