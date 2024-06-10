@@ -29,15 +29,16 @@ class TableComparer
     src_columns = @psql.columns(@table, @options[:src])
     src_columns.select! { |k, _v| options[:columns].include?(k) } if options[:columns]
 
+    logger.debug("Source columns: #{src_columns}")
     @key = options[:key]
     raise("[#{table}] Missing key #{key}") unless src_columns[key]
     raise("[#{table}] Key #{key} is nullable") unless src_columns[key] == 'NO'
 
     @columns = src_columns.keys
     target_columns = psql.columns(target_table, options[:target]).keys
+    logger.debug("Target columns: #{target_columns}")
 
     if columns & target_columns != columns
-
       raise("[#{table}] Missing columns in target table #{target_table}: #{columns - target_columns}")
     end
 
