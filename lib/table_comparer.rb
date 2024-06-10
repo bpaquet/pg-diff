@@ -37,12 +37,11 @@ class TableComparer
     logger.debug("Source columns: #{src_columns}")
 
     @columns = src_columns.keys
-    target_columns = psql.columns(target_table, options[:target]).keys
+    @target_columns = psql.columns(target_table, options[:target]).keys
     logger.debug("Target columns on database: #{target_columns}")
 
-    target_columns.select! { |k, _v| options[:target_columns].include?(k) } if options[:target_columns]
-    logger.debug("Target columns: #{target_columns}")
-    @target_columns = target_columns.keys
+    @target_columns.select! { |k, _v| options[:target_columns].include?(k) } if options[:target_columns]
+    logger.debug("Target columns: #{@target_columns}")
 
     if columns.size != target_columns.size
       raise("[#{table}] Different number of columns in target table #{target_table}: #{columns.size} != #{target_columns.size}")
