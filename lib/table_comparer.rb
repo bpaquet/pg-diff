@@ -35,7 +35,7 @@ class TableComparer
 
     src_columns.select! { |k, _v| options[:columns].include?(k) } if options[:columns]
 
-    @columns = src_columns.keys
+    @columns = @options[:target_columns] || src_columns.keys
     target_columns = psql.columns(target_table, options[:target]).keys
     logger.debug("Target columns: #{target_columns}")
 

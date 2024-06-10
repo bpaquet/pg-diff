@@ -85,6 +85,11 @@ OptionParser.new do |opts| # rubocop:disable Metrics/BlockLength
     options[:columns] = v.split(',')
   end
 
+  opts.on('--target_columns columns_list', 'Columns list (comma separated) to use for comparison on target. ' \
+                                    'If not specified, source columns will be used') do |v|
+    options[:target_columns] = v.split(',')
+  end
+
   opts.on('--record_sql_file file', 'File to log all sql request. Mosty lused in tests') do |v|
     options[:record_sql_file] = v
   end
