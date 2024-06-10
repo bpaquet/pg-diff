@@ -53,6 +53,10 @@ OptionParser.new do |opts| # rubocop:disable Metrics/BlockLength
     options[:order_by] = v
   end
 
+  opts.on('--target_order_by order_by', 'Target order by clause to be used with select sql queries. Default: id.') do |v|
+    options[:target_order_by] = v
+  end
+
   opts.on('--strategy strategy', 'Diff strategy: one_shot, by_id, by_timestamp. Default: one_shot.') do |v|
     options[:strategy] = v
   end
