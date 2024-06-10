@@ -27,25 +27,26 @@ class TableComparer
     logger.warn("[#{table}] Configuring columns")
 
     src_columns = @psql.columns(@table, @options[:src])
-    logger.debug("Source columns: #{src_columns}")
+    logger.debug("Source columns on database: #{src_columns}")
 
     @key = options[:key]
     raise("[#{table}] Missing key #{key}") unless src_columns[key]
     raise("[#{table}] Key #{key} is nullable") unless src_columns[key] == 'NO'
 
     src_columns.select! { |k, _v| options[:columns].include?(k) } if options[:columns]
+    logger.debug("Source columns: #{src_columns}")
 
-    @columns = @options[:target_columns] || src_columns.keys
+    @columns = src_columns.keys
     target_columns = psql.columns(target_table, options[:target]).keys
+    logger.debug("Target columns on database: #{target_columns}")
+
+    target_columns.select! { |k, _v| options[:target_columns].include?(k) } if options[:target_columns]
     logger.debug("Target columns: #{target_columns}")
+    @target_columns = target_columns.keys
 
-    if columns & target_columns != columns
-      raise("[#{table}] Missing columns in target table #{target_table}: #{columns - target_columns}")
+    if columns.size != target_columns.size
+      raise("[#{table}] Different number of columns in target table #{target_table}: #{columns.size} != #{target_columns.size}")
     end
-
-    return unless (target_columns - columns) != []
-
-    logger.warn("[#{table}] Different columns in target table #{target_table}: #{target_columns - columns}")
   end
 
   def compute_batches
