@@ -138,7 +138,6 @@ options[:tables].split(',').map do |table|
 end
 
 logger.warn("Number of batches: #{to_do.size}, parallelism: #{options[:parallel]}.")
-logger.info("First batch: #{to_do.first}, last: #{to_do.last}")
 
 Parallel.each(
   to_do,

@@ -69,6 +69,7 @@ module Strategy
         result << build_batch(current, next_current)
         current = next_current
       end
+      logger.info("[#{@table}] First batch: #{result.first[:where]}, last batch: #{result.last[:where]}")
       result
     end
   end
