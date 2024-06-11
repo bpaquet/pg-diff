@@ -65,7 +65,7 @@ class ByTimestampTest < Minitest::Test
     assert @helper.run_diff(OPTIONS + " --key_stop='#{now + (5 * 3600 * 24)}'")
 
     now_str = now.strftime('%Y-%m-%d %H:%M:%S %z')
-    now_stop_str = (now + (10 * 3600 * 24)).strftime('%Y-%m-%d %H:%M:%S %z')
+    now_stop_str = (now + (5 * 3600 * 24)).strftime('%Y-%m-%d %H:%M:%S %z')
 
     assert_equal sql_commands, [
       'SELECT min(created_at) as k FROM test1',
@@ -76,7 +76,7 @@ class ByTimestampTest < Minitest::Test
     assert @helper.run_diff(OPTIONS + " --key_start='#{now + (1 * 3600 * 24)}' --key_stop='#{now + (5 * 3600 * 24)}'")
 
     now_str = (now + (1 * 3600 * 24)).strftime('%Y-%m-%d %H:%M:%S %z')
-    now_stop_str = (now + (11 * 3600 * 24)).strftime('%Y-%m-%d %H:%M:%S %z')
+    now_stop_str = (now + (5 * 3600 * 24)).strftime('%Y-%m-%d %H:%M:%S %z')
 
     assert_equal sql_commands, [
       "select id, name, created_at from test1 WHERE created_at >= '#{now_str}' AND created_at < '#{now_stop_str}' ORDER BY id" # rubocop:disable Layout/LineLength
