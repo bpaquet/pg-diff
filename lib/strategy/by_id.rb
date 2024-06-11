@@ -66,7 +66,7 @@ module Strategy
       current = key_start
       while current < build_next_key(key_stop, @options[:batch_size])
         next_current = build_next_key(current, @options[:batch_size])
-        next_current = min(next_current, @options[:key_stop]) if @options[:key_stop]
+        next_current = [next_current, @options[:key_stop]].min if @options[:key_stop]
         result << build_batch(current, next_current)
         current = next_current
       end
