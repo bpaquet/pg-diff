@@ -64,7 +64,7 @@ module Strategy
       return [empty_batch] if key_start.nil? || key_stop.nil?
 
       current = key_start
-      while current < build_next_key(key_stop, 1)
+      while current < build_next_key(key_stop, @options[:batch_size])
         next_current = build_next_key(current, @options[:batch_size])
         result << build_batch(current, next_current)
         current = next_current
