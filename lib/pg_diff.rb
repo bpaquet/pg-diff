@@ -71,7 +71,7 @@ OptionParser.new do |opts| # rubocop:disable Metrics/BlockLength
     options[:key_start] = v
   end
 
-  opts.on('--key_stop key', 'Where to stop the diff. If not specified, max(key) + 1 will be used') do |v|
+  opts.on('--key_stop key', 'Where to stop the diff. If not specified, max(key) + batch_size will be used.') do |v|
     options[:key_stop] = v
   end
 

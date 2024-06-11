@@ -38,9 +38,10 @@ module Strategy
     end
 
     def build_batch(current, next_current)
+      batch_end = @options[:key_stop] ? min(next_current, @options[:key_stop]) : next_current
       {
         name: "#{@table}_#{current}",
-        where: "#{@options[:key]} >= #{key_to_pg(current)} AND #{@options[:key]} < #{key_to_pg(next_current)}"
+        where: "#{@options[:key]} >= #{key_to_pg(current)} AND #{@options[:key]} < #{key_to_pg(batch_end)}"
       }
     end
 
