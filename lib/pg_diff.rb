@@ -71,7 +71,8 @@ OptionParser.new do |opts| # rubocop:disable Metrics/BlockLength
     options[:key_start] = v
   end
 
-  opts.on('--key_stop key', 'Where to stop the diff. If not specified, max(key) + 1 will be used') do |v|
+  opts.on('--key_stop key', 'Where to stop the diff. If not specified, max(key) + batch_size will be used.' \
+                            'With timestamp strategy, \'now-x\', with x in seconds can be used') do |v|
     options[:key_stop] = v
   end
 
@@ -95,15 +96,6 @@ OptionParser.new do |opts| # rubocop:disable Metrics/BlockLength
     options[:extract_result_to_file] = v
   end
 
-  opts.on('--limit_to_the_past_minutes minutes', 'Add a where condition like [key] < now - x minutes') do |v|
-    options[:limit_to_the_past_minutes] = v.to_i
-  end
-
-  opts.on('--limit_to_the_past_key key', 'Key to use with limit_to_the_past_minutes. ' \
-                                         'Default is the key from --key') do |v|
-    options[:limit_to_the_past_key] = v
-  end
-
   opts.on('--custom_select custom_select', 'Instead of doing a full diff, use a custom select. ' \
                                            'For example, count(*) can be used to compare append only table. ' \
                                            'The order clause is omitted in that case.') do |v|
@@ -120,12 +112,6 @@ require_relative 'psql'
 logger = Logger.new($stdout)
 logger.level = options[:log_level]
 
-if options[:limit_to_the_past_minutes]
-  where_key = options[:limit_to_the_past_key] || options[:key]
-  options[:where_clause] = " AND #{where_key} < '#{Time.now - (options[:limit_to_the_past_minutes] * 60)}'"
-  logger.info("Adding where clause: #{options[:where_clause][5..]}")
-end
-
 logger.info("Using custom select: #{options[:custom_select]}") if options[:custom_select]
 
 psql = Psql.new(options)
@@ -137,7 +123,8 @@ options[:tables].split(',').map do |table|
   to_do += handler.compute_batches
 end
 
-logger.warn("Number of batches: #{to_do.size}, parallelism: #{options[:parallel]}")
+logger.warn("Number of batches: #{to_do.size}, parallelism: #{options[:parallel]}.")
+
 Parallel.each(
   to_do,
   in_threads: options[:parallel],

@@ -9,6 +9,9 @@ module Strategy
     def str_to_key(str)
       return nil if str.nil? || str == '\\N'
 
+      match = str.match(/^now\s*-\s*(\d+)$/)
+      return Time.now - match[1].to_i if match
+
       Time.parse(str)
     end
 
