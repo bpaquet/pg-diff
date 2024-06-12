@@ -20,7 +20,6 @@ Note: on real table, you need an index on the column used as `key`.
 
 * `key_start`: With `by_id` and `by_timestamp` strategy, specify where to start instead of using `min`.
 * `key_stop`: With `by_id` and `by_timestamp` strategy, specify where to start instead of using `max`.
-* `limit_to_the_past_minutes` and `limit_to_the_past_key`: useful when you comparing tables synchronized through an async pipeline (like Kafka / Debezium). Do not compare the x last minutes, based on the specified key (`created_at` for example)
 
 ## Extract the result to reuse them
 
@@ -40,6 +39,13 @@ The number is the first item of each row, which is the primary key is most of ta
 `pg-diff` generate by default queries like `select a, b, c from ....`.
 
 You can use `--custom_select='count(*)'` to generate `select count(*) from ...`. This can be really useful for append only table.
+
+## Recheck for errors after x seconds
+
+`--recheck_for_errors` will recheck the lines in errors after x seconds.
+
+The recheck is performed using the first item of each row. This is especially useful
+while diffing data on a live streaming replication.
 
 ## Run it in docker
 
