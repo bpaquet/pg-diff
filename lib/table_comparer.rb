@@ -97,8 +97,8 @@ class TableComparer
     elsif options[:recheck_for_errors] && allow_recheck
       diffs = @extract_result_helper.parse(diff_file.path)
       pks = diffs.map { |diff| diff.values.first }.uniq.sort
-      logger.warn("[#{table}] Error found on batch #{batch[:name]}, rechecking some lines: " \
-                  "#{columns.first} in #{pks.join(',')}")
+      logger.warn("[#{table}] Error found on batch #{batch[:name]}, #{count} lines, " \
+                  "rechecking some lines: #{columns.first} in #{pks.join(',')}")
       sleep(options[:recheck_for_errors])
       new_batch = {
         name: "#{batch[:name]}_recheck",
