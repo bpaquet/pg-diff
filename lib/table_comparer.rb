@@ -95,7 +95,6 @@ class TableComparer
     if result
       logger.info("[#{table}] No error on batch #{batch[:name]}, #{count} lines")
     elsif options[:recheck_for_errors] && allow_recheck
-      puts File.read(diff_file.path)
       diffs = @extract_result_helper.parse(diff_file.path)
       pks = diffs.map { |diff| diff.values.first }.uniq.sort
       logger.warn("[#{table}] Error found on batch #{batch[:name]}, rechecking some lines: " \
