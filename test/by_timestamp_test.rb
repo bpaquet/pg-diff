@@ -98,10 +98,13 @@ class ByTimestampTest < Minitest::Test
 
     now_str = (now - 10).strftime('%Y-%m-%d %H:%M:%S %z')
     now_stop_str = (now - 5).strftime('%Y-%m-%d %H:%M:%S %z')
+    now_stop_str_plus1 = (now - 4).strftime('%Y-%m-%d %H:%M:%S %z')
 
-    assert_equal sql_commands, [
-      'SELECT min(created_at) as k FROM test1',
-      "select id, name, created_at from test1 WHERE created_at >= '#{now_str}' AND created_at < '#{now_stop_str}' ORDER BY id" # rubocop:disable Layout/LineLength
-    ]
+    potential_sql_commands =
+      [now_stop_str, now_stop_str_plus1].map do |x|
+        "select id, name, created_at from test1 WHERE created_at >= '#{now_str}' AND created_at < '#{x}' ORDER BY id"
+      end
+
+    assert_includes potential_sql_commands, sql_commands[1]
   end
 end

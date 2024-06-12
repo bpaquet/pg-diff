@@ -10,6 +10,8 @@ require_relative 'strategy/one_shot'
 require_relative 'strategy/by_id'
 require_relative 'strategy/by_timestamp'
 
+$stdout.sync = true
+
 options = {
   psql: 'psql',
   log_level: Logger::INFO,
@@ -100,6 +102,13 @@ OptionParser.new do |opts| # rubocop:disable Metrics/BlockLength
                                            'For example, count(*) can be used to compare append only table. ' \
                                            'The order clause is omitted in that case.') do |v|
     options[:custom_select] = v
+  end
+
+  opts.on('--recheck_for_errors delay', 'Recheck for errors after the delay, by parsing the result ' \
+                                        'and sending back a query using the primary keys (where pk in (ids)). ' \
+                                        'The primary key must be the first column. This is especially useful ' \
+                                        'to check the result of a streaming replication.') do |v|
+    options[:recheck_for_errors] = v.to_i
   end
 end.parse!
 
