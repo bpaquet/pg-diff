@@ -3,7 +3,7 @@
 require 'minitest/autorun'
 
 require_relative 'helper'
-class ByIdTest < Minitest::Test
+class RecheckForErrorsest < Minitest::Test
   LOG_FILE = '/tmp/sql.log'
   OPTIONS = "--tables test1 --strategy=by_id --record_sql_file #{LOG_FILE} --recheck_for_errors=1".freeze
 
