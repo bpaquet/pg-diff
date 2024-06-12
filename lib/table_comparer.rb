@@ -99,7 +99,7 @@ class TableComparer
       pks = diffs.map { |diff| diff.values.first }.uniq.sort
       logger.warn("[#{table}] Error found on batch #{batch[:name]}, #{count} lines, " \
                   "rechecking #{pks.size} lines")
-      logger.info("[#{table}] Recheck #{columns.first} in #{pks.join(', ')}")
+      logger.info("[#{table}] Recheck #{columns.first} in #{pks[0..20].join(', ')}")
       sleep(options[:recheck_for_errors])
       new_batch = {
         name: "#{batch[:name]}_recheck",
