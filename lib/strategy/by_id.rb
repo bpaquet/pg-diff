@@ -37,10 +37,10 @@ module Strategy
       key
     end
 
-    def build_batch(current, next_current)
+    def build_batch(start, stop)
       {
-        name: "#{@table}_#{current}",
-        where: "#{@options[:key]} >= #{key_to_pg(current)} AND #{@options[:key]} < #{key_to_pg(next_current)}"
+        name: "#{@table}_#{start}",
+        where: "#{@options[:key]} >= #{key_to_pg(start)} AND #{@options[:key]} < #{key_to_pg(stop)}"
       }
     end
 

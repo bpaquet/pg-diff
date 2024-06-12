@@ -101,6 +101,13 @@ OptionParser.new do |opts| # rubocop:disable Metrics/BlockLength
                                            'The order clause is omitted in that case.') do |v|
     options[:custom_select] = v
   end
+
+  opts.on('--recheck_for_errors delay', 'Recheck for errors after the delay, by parsing the result ' \
+                                        'and sending back a query using the primary keys (where pk in (ids)). ' \
+                                        'The primary key must be the first column. This is especially useful ' \
+                                        'to check the result of a streaming replication.') do |v|
+    options[:recheck_for_errors] = v.to_i
+  end
 end.parse!
 
 %i[src target tables].each do |key|
