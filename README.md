@@ -19,7 +19,7 @@ Note: on real table, you need an index on the column used as `key`.
 ## Compare only a subset of the dataset
 
 * `key_start`: With `by_id` and `by_timestamp` strategy, specify where to start instead of using `min`.
-* `key_stop`: With `by_id` and `by_timestamp` strategy, specify where to start instead of using `max`.
+* `key_stop`: With `by_id` and `by_timestamp` strategy, specify where to start instead of using `max`. Relative value to now can be used: `now-5` means now minus 5 seconds.
 
 ## Extract the result to reuse them
 
