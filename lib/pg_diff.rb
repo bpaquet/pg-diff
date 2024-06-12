@@ -10,6 +10,8 @@ require_relative 'strategy/one_shot'
 require_relative 'strategy/by_id'
 require_relative 'strategy/by_timestamp'
 
+$stdout.sync = true
+
 options = {
   psql: 'psql',
   log_level: Logger::INFO,
