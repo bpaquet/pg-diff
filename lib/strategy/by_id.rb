@@ -38,6 +38,7 @@ module Strategy
     end
 
     def build_batch(start, stop)
+      p start, stop, start < stop
       {
         name: "#{@table}_#{start}",
         where: "#{@options[:key]} >= #{key_to_pg(start)} AND #{@options[:key]} < #{key_to_pg(stop)}"
