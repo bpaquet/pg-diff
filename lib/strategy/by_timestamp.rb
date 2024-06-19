@@ -20,6 +20,8 @@ module Strategy
     end
 
     def build_batch(current, next_current)
+      p start, stop, start < stop
+      
       {
         name: "#{@table}_#{current}",
         where: "#{@options[:key]} >= '#{current}' AND #{@options[:key]} < '#{next_current}'"
