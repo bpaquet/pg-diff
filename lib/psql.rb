@@ -41,16 +41,17 @@ class Psql
   end
 
   def run_psql_file(file, url)
-    _, stdout, stderr, wait_thr = Open3.popen3("#{@options[:psql]} #{url} -v ON_ERROR_STOP=on -f #{file.path}")
-    wait_thr.join
-    result = wait_thr.value
-    file.unlink
-    unless result.success?
-      puts stdout.read
-      puts stderr.read
-      raise('Failed to psql command')
+    Open3.popen3("#{@options[:psql]} #{url} -v ON_ERROR_STOP=on -f #{file.path}") do |_, stdout, stderr, wait_thr|
+      wait_thr.join
+      result = wait_thr.value
+      file.unlink
+      unless result.success?
+        puts stdout.read
+        puts stderr.read
+        raise('Failed to psql command')
+      end
+      stdout.read
     end
-    stdout.read
   end
 
   def columns(table, url)
