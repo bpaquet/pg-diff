@@ -38,7 +38,6 @@ module Strategy
     end
 
     def build_batch(start, stop)
-      p start, stop, start < stop
       {
         name: "#{@table}_#{start}",
         where: "#{@options[:key]} >= #{key_to_pg(start)} AND #{@options[:key]} < #{key_to_pg(stop)}"
@@ -68,7 +67,7 @@ module Strategy
       while current < build_next_key(key_stop, 1)
         next_current = build_next_key(current, @options[:batch_size])
         end_batch =  @options[:key_stop] ? [next_current, str_to_key(@options[:key_stop])].min : next_current
-        result << build_batch(current, end_batch)
+        result << build_batch(current, end_batch) if current < end_batch
         current = next_current
       end
       logger.info("[#{@table}] First batch: #{result.first[:where]}, last batch: #{result.last[:where]}")
