@@ -23,6 +23,11 @@ class TableComparer
       end
   end
 
+  def check_key!(src_columns)
+    raise("[#{table}] Missing key #{key}") unless src_columns[key]
+    raise("[#{table}] Key #{key} is nullable") if !@options[:no_null_check] && src_columns[key] != 'NO'
+  end
+
   def configure_columns!
     logger.warn("[#{table}] Configuring columns")
 
@@ -30,14 +35,12 @@ class TableComparer
     src_columns.select! { |k, _v| options[:columns].include?(k) } if options[:columns]
 
     @key = options[:key]
-    raise("[#{table}] Missing key #{key}") unless src_columns[key]
-    raise("[#{table}] Key #{key} is nullable") unless src_columns[key] == 'NO'
+    check_key!(src_columns)
 
     @columns = src_columns.keys
     target_columns = psql.columns(target_table, options[:target]).keys
 
     if columns & target_columns != columns
-
       raise("[#{table}] Missing columns in target table #{target_table}: #{columns - target_columns}")
     end
 
