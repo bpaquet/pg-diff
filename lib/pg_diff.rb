@@ -114,6 +114,14 @@ OptionParser.new do |opts| # rubocop:disable Metrics/BlockLength
   opts.on('--no_null_check', 'Do not check for not null on key.') do |v|
     options[:no_null_check] = v
   end
+
+  opts.on('--where_from WHERE_CLAUSE', 'Where clause to be added on the from query') do |v|
+    options[:where_from] = " AND #{v}"
+  end
+
+  opts.on('--where_target WHERE_CLAUSE', 'Where clause to be added on the target query') do |v|
+    options[:where_target] = " AND #{v}"
+  end
 end.parse!
 
 %i[src target tables].each do |key|
