@@ -10,7 +10,7 @@ class WhereClauseTest < Minitest::Test
     @helper.target_sql('DROP TABLE IF EXISTS test1;')
   end
 
-  def test_where
+  def test_where # rubocop:disable Minitest/MultipleAssertions
     @helper.src_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50));')
     @helper.src_sql('INSERT INTO test1 VALUES (1, \'a\'), (200, \'x\');')
     @helper.target_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50));')
