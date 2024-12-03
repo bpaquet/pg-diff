@@ -31,7 +31,7 @@ class TableComparer
 
     @key = options[:key]
     raise("[#{table}] Missing key #{key}") unless src_columns[key]
-    raise("[#{table}] Key #{key} is nullable") unless src_columns[key] == 'NO'
+    raise("[#{table}] Key #{key} is nullable") if !@options[:no_null_check] && !(src_columns[key] == 'NO')
 
     @columns = src_columns.keys
     target_columns = psql.columns(target_table, options[:target]).keys

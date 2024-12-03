@@ -110,6 +110,10 @@ OptionParser.new do |opts| # rubocop:disable Metrics/BlockLength
                                         'to check the result of a streaming replication.') do |v|
     options[:recheck_for_errors] = v.to_i
   end
+
+  opts.on('--no_null_check', 'Do not check for not null on key.') do |v|
+    options[:no_null_check] = v
+  end
 end.parse!
 
 %i[src target tables].each do |key|
