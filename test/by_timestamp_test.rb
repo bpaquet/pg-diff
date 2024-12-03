@@ -32,6 +32,20 @@ class ByTimestampTest < Minitest::Test
     ], sql_commands
   end
 
+  def test_empty_null_key
+    @helper.src_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50), created_at TIMESTAMP);')
+    @helper.target_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50), created_at TIMESTAMP);')
+
+    refute @helper.run_diff(OPTIONS)
+    assert @helper.run_diff("#{OPTIONS} --no_null_check")
+
+    assert_equal [
+      'SELECT min(created_at) as k FROM test1',
+      'SELECT max(created_at) as k FROM test1',
+      'select id, name, created_at from test1 WHERE 1 = 1 ORDER BY id'
+    ], sql_commands
+  end
+
   def test_with_two_lines
     now = Time.now
     @helper.src_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50), created_at TIMESTAMP NOT NULL);')
