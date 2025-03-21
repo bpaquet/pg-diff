@@ -23,7 +23,7 @@ Note: on real table, you need an index on the column used as `key`.
 
 ## Extract the result to reuse them
 
-* `record_sql_file`: It will output all the difference in a file to allow reuse of the difference (for example to resync them).
+* `extract_result_to_file`: It will output all the difference in a file to allow reuse of the difference (for example to resync them).
 
 Format:
 ```
