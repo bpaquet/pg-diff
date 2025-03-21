@@ -3,6 +3,8 @@
 require 'minitest/autorun'
 
 require_relative 'helper'
+require_relative '../lib/extract_result_helper'
+
 class ExtractResultToFileTest < Minitest::Test
   LOG_FILE = '/tmp/diff.log'
   OPTIONS = "--tables test1 --strategy=one_shot --extract_result_to_file #{LOG_FILE}".freeze
@@ -67,5 +69,15 @@ class ExtractResultToFileTest < Minitest::Test
     refute @helper.run_diff(OPTIONS)
 
     assert_equal ['changed: 3', 'only_in_target: 4'], File.readlines(LOG_FILE).map(&:strip)
+  end
+
+  def test_with_two_consecutives_diff
+    @helper.src_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50));')
+    @helper.src_sql('INSERT INTO test1 VALUES (1, \'a\'), (2, \'b\');')
+    @helper.target_sql('CREATE TABLE test1 (id serial PRIMARY KEY, name VARCHAR(50));')
+    @helper.target_sql('INSERT INTO test1 VALUES (1, \'b\'), (2, \'c\');')
+
+    refute @helper.run_diff(OPTIONS)
+    assert_equal ['changed: 1', 'changed: 2'], File.readlines(LOG_FILE).map(&:strip)
   end
 end
