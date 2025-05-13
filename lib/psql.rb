@@ -65,4 +65,13 @@ class Psql
       line.strip.split("\t")
     end
   end
+
+  def column_type(table, url, column)
+    file = build_copy(
+      'SELECT data_type FROM information_schema.columns ' \
+      "where (table_schema || '.' || table_name='#{table}')  " \
+      "or (table_schema = 'public' and table_name='#{table}') AND column_name='#{column}' "
+    )
+    run_psql_file(file, url).strip
+  end
 end

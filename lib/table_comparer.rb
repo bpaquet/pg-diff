@@ -76,6 +76,11 @@ class TableComparer
     "#{options[:psql]} #{url} -v ON_ERROR_STOP=on -f #{file.path}"
   end
 
+  def build_recheck_where(pks)
+    key_type = @psql.column_type(@table, options[:src], options[:key])
+    key_type == 'uuid' ? pks.map { |pk| "'#{pk}'" }.join(', ') : pks.join(', ')
+  end
+
   def process_batch(batch, allow_recheck: true)
     src_sql_file = copy(batch, table, options[:where_from])
     target_sql_file = copy(batch, target_table, options[:where_target])
@@ -106,7 +111,7 @@ class TableComparer
       sleep(options[:recheck_for_errors])
       new_batch = {
         name: "#{batch[:name]}_recheck",
-        where: "#{columns.first} in (#{pks.join(', ')})"
+        where: "#{columns.first} in (#{build_recheck_where(pks)})"
       }
       process_batch(new_batch, allow_recheck: false)
     else
