@@ -35,6 +35,7 @@ class TableComparer
     src_columns.select! { |k, _v| options[:columns].include?(k) } if options[:columns]
 
     @key = options[:key]
+    @key_type = @psql.column_type(@table, options[:src], @key)
     check_key!(src_columns)
 
     @columns = src_columns.keys
@@ -77,8 +78,7 @@ class TableComparer
   end
 
   def build_recheck_where(pks)
-    key_type = @psql.column_type(@table, options[:src], options[:key])
-    key_type == 'uuid' ? pks.map { |pk| "'#{pk}'" }.join(', ') : pks.join(', ')
+    @key_type == 'uuid' ? pks.map { |pk| "'#{pk}'" }.join(', ') : pks.join(', ')
   end
 
   def process_batch(batch, allow_recheck: true)
