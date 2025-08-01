@@ -64,8 +64,8 @@ class TableComparer
     batch[:where] + (where_clause || '')
   end
 
-  def copy(batch, source_table, where_clause)
-    select = options[:custom_select] || columns.join(', ')
+  def copy(batch, source_table, where_clause, mapping)
+    select = options[:custom_select] || columns.map { |x| mapping ? mapping[x] || x : x }.join(', ')
     order = options[:custom_select] ? '' : " ORDER BY #{options[:order_by]}"
 
     psql.build_copy(
@@ -82,8 +82,8 @@ class TableComparer
   end
 
   def process_batch(batch, allow_recheck: true)
-    src_sql_file = copy(batch, table, options[:where_from])
-    target_sql_file = copy(batch, target_table, options[:where_target])
+    src_sql_file = copy(batch, table, options[:where_from], options.dig(:advanced_mapping, 'src'))
+    target_sql_file = copy(batch, target_table, options[:where_target], options.dig(:advanced_mapping, 'target'))
 
     diff_file = Tempfile.new("diff_#{table}")
     wc_file = Tempfile.new("wc_#{table}")

@@ -1,4 +1,4 @@
-FROM ruby:3.4.2-slim
+FROM ruby:3.4.5-slim
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends postgresql-client \
