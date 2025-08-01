@@ -3,6 +3,7 @@
 require 'optparse'
 require 'logger'
 require 'parallel'
+require 'json'
 
 require_relative 'stats'
 require_relative 'table_comparer'
@@ -121,6 +122,10 @@ OptionParser.new do |opts| # rubocop:disable Metrics/BlockLength
 
   opts.on('--where_target WHERE_CLAUSE', 'Where clause to be added on the target query') do |v|
     options[:where_target] = " AND #{v}"
+  end
+
+  opts.on('--advanced_mapping JSON', 'Json string for advanced mapping') do |v|
+    options[:advanced_mapping] = JSON.parse(v)
   end
 end.parse!
 
