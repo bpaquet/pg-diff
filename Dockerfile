@@ -6,7 +6,9 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 
 COPY Gemfile Gemfile.lock ./
-RUN bundle install --without test
+RUN bundle config set --local frozen true \
+  && bundle config set --local without test \
+  && bundle install
 
 COPY lib/ lib/
 COPY pg-diff ./
