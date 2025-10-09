@@ -27,9 +27,7 @@ module IamAuth
     cache_key = "#{username}@#{host}:#{port}"
     cache_mutex.synchronize do
       cached = token_cache[cache_key]
-      if cached && cached[:expires_at] > Time.now
-        return cached[:token]
-      end
+      return cached[:token] if cached && cached[:expires_at] > Time.now
     end
 
     logger&.debug("Generating IAM authentication token for #{username}@#{host}:#{port}")
@@ -73,11 +71,6 @@ module IamAuth
 
     # Fallback: try to get region from AWS SDK default configuration
     # This will use AWS_REGION env var, AWS config file, or EC2 metadata
-    begin
-      Aws.config[:region] || ENV['AWS_REGION'] || ENV['AWS_DEFAULT_REGION'] || raise('Region not found')
-    rescue StandardError
-      raise "Unable to extract AWS region from host '#{host}'. " \
-            'Please set AWS_REGION environment variable or use standard RDS endpoint format.'
-    end
+    Aws.config[:region] || ENV['AWS_REGION'] || ENV.fetch('AWS_DEFAULT_REGION', nil)
   end
 end
