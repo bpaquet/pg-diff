@@ -2,6 +2,7 @@
 
 source 'https://rubygems.org'
 
+gem 'aws-sdk-rds'
 gem 'parallel'
 gem 'ruby-progressbar'
 

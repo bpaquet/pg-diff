@@ -3,6 +3,7 @@
 require 'tempfile'
 require 'logger'
 require 'open3'
+require 'uri'
 
 # Help to run psql commands
 class Psql
@@ -16,6 +17,8 @@ class Psql
 
   def initialize(options)
     @options = options
+    # Load IAM auth module if needed
+    require_relative 'iam_auth' if options[:iam_auth_source] || options[:iam_auth_target]
   end
 
   def logger
@@ -41,7 +44,8 @@ class Psql
   end
 
   def run_psql_file(file, url)
-    Open3.popen3("#{@options[:psql]} #{url} -v ON_ERROR_STOP=on -f #{file.path}") do |_, stdout, stderr, wait_thr|
+    env = build_env_for_url(url)
+    Open3.popen3(env, "#{@options[:psql]} #{url} -v ON_ERROR_STOP=on -f #{file.path}") do |_, stdout, stderr, wait_thr|
       wait_thr.join
       result = wait_thr.value
       file.unlink
@@ -52,6 +56,32 @@ class Psql
       end
       stdout.read
     end
+  end
+
+  def build_env_for_url(url)
+    env = {}
+
+    # Check if this URL should use IAM authentication
+    if should_use_iam_auth?(url)
+      password = IamAuth.generate_token(url, logger: logger)
+      env['PGPASSWORD'] = password
+    end
+
+    env
+  end
+
+  def build_env_string_for_url(url)
+    # Build environment variable string for shell commands
+    env = build_env_for_url(url)
+    return '' if env.empty?
+
+    # Properly escape values for shell - replace single quotes with '\''
+    env.map { |k, v| "#{k}='#{v.gsub("'", "'\\''")}'" }.join(' ')
+  end
+
+  def should_use_iam_auth?(url)
+    (@options[:iam_auth_source] && url == @options[:src]) ||
+      (@options[:iam_auth_target] && url == @options[:target])
   end
 
   def columns(table, url)

@@ -127,6 +127,14 @@ OptionParser.new do |opts| # rubocop:disable Metrics/BlockLength
   opts.on('--advanced_mapping JSON', 'Json string for advanced mapping') do |v|
     options[:advanced_mapping] = JSON.parse(v)
   end
+
+  opts.on('--iam-auth-source', 'Use AWS IAM authentication for source database') do |v|
+    options[:iam_auth_source] = v
+  end
+
+  opts.on('--iam-auth-target', 'Use AWS IAM authentication for target database') do |v|
+    options[:iam_auth_target] = v
+  end
 end.parse!
 
 %i[src target tables].each do |key|
