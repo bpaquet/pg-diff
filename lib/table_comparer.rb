@@ -74,7 +74,9 @@ class TableComparer
   end
 
   def psql_command(file, url)
-    "#{options[:psql]} #{url} -v ON_ERROR_STOP=on -f #{file.path}"
+    env = psql.build_env_string_for_url(url)
+    env_prefix = env.empty? ? '' : "#{env} "
+    "#{env_prefix}#{options[:psql]} #{url} -v ON_ERROR_STOP=on -f #{file.path}"
   end
 
   def build_recheck_where(pks)
@@ -88,6 +90,7 @@ class TableComparer
     diff_file = Tempfile.new("diff_#{table}")
     wc_file = Tempfile.new("wc_#{table}")
     wc_file.close
+
     command = 'diff --speed-large-file ' \
               "<(#{psql_command(src_sql_file, options[:src])} | tee >(wc -l > #{wc_file.path})) " \
               "<(#{psql_command(target_sql_file, options[:target])} ) " \
